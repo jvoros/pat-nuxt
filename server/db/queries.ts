@@ -5,25 +5,15 @@ import type { Board, LogItem, SiteConfig } from "../core/types";
 
 export type SiteRow = {
   slug: string;
-  name: string;
-  accessCode: string;
-  timezone: string;
   config: SiteConfig;
-};
-
-export type BoardRow = {
-  id: number;
-  slug: string;
-  date: number;
-  state: Board;
-  undoId: number | null;
+  board: Board | null;
 };
 
 export type UndoRow = {
   id: number;
-  slug: string;
+  board: Board;
+  site: string;
   date: number;
-  state: Board;
 };
 
 // ---- Sites ----------------------------------------------------------------
@@ -31,53 +21,26 @@ export type UndoRow = {
 export const getSite = async (slug: string): Promise<SiteRow | null> => {
   const db = useDb();
   const result = await db.execute({
-    sql: "SELECT slug, name, access_code, timezone, config FROM sites WHERE slug = ?",
+    sql: "SELECT slug, site, board FROM sites WHERE slug = ?",
     args: [slug],
   });
   const row = result.rows[0];
   if (!row) return null;
   return {
     slug: row.slug as string,
-    name: row.name as string,
-    accessCode: row.access_code as string,
-    timezone: row.timezone as string,
-    config: JSON.parse(row.config as string) as SiteConfig,
+    config: JSON.parse(row.site as string) as SiteConfig,
+    board: row.board ? (JSON.parse(row.board as string) as Board) : null,
   };
 };
 
-// ---- Boards ---------------------------------------------------------------
-
-export const getBoard = async (
+export const updateBoard = async (
   slug: string,
-  date: number,
-): Promise<BoardRow | null> => {
-  const db = useDb();
-  const result = await db.execute({
-    sql: "SELECT id, slug, date, state, undo_id FROM boards WHERE slug = ? AND date = ?",
-    args: [slug, date],
-  });
-  const row = result.rows[0];
-  if (!row) return null;
-  return {
-    id: row.id as number,
-    slug: row.slug as string,
-    date: row.date as number,
-    state: JSON.parse(row.state as string) as Board,
-    undoId: row.undo_id as number | null,
-  };
-};
-
-export const upsertBoard = async (
   board: Board,
-  undoId: number | null,
 ): Promise<void> => {
   const db = useDb();
   await db.execute({
-    sql: `INSERT INTO boards (slug, date, state, undo_id)
-          VALUES (?, ?, ?, ?)
-          ON CONFLICT (slug, date)
-          DO UPDATE SET state = excluded.state, undo_id = excluded.undo_id`,
-    args: [board.slug, board.date, JSON.stringify(board), undoId],
+    sql: "UPDATE sites SET board = ? WHERE slug = ?",
+    args: [JSON.stringify(board), slug],
   });
 };
 
@@ -86,8 +49,8 @@ export const upsertBoard = async (
 export const addUndo = async (board: Board): Promise<number> => {
   const db = useDb();
   const result = await db.execute({
-    sql: "INSERT INTO undos (slug, date, state) VALUES (?, ?, ?)",
-    args: [board.slug, board.date, JSON.stringify(board)],
+    sql: "INSERT INTO undos (board, site, date) VALUES (?, ?, ?)",
+    args: [JSON.stringify(board), board.slug, board.date],
   });
   return Number(result.lastInsertRowid);
 };
@@ -95,25 +58,23 @@ export const addUndo = async (board: Board): Promise<number> => {
 export const getUndo = async (id: number): Promise<UndoRow | null> => {
   const db = useDb();
   const result = await db.execute({
-    sql: "SELECT id, slug, date, state FROM undos WHERE id = ?",
+    sql: "SELECT id, board, site, date FROM undos WHERE id = ?",
     args: [id],
   });
   const row = result.rows[0];
   if (!row) return null;
   return {
     id: row.id as number,
-    slug: row.slug as string,
+    board: JSON.parse(row.board as string) as Board,
+    site: row.site as string,
     date: row.date as number,
-    state: JSON.parse(row.state as string) as Board,
   };
 };
 
-// Removes all undo rows for a site/date. Called when the board resets
-// at the start of a new day — prior undo history is no longer relevant.
 export const clearUndos = async (slug: string, date: number): Promise<void> => {
   const db = useDb();
   await db.execute({
-    sql: "DELETE FROM undos WHERE slug = ? AND date = ?",
+    sql: "DELETE FROM undos WHERE site = ? AND date = ?",
     args: [slug, date],
   });
 };
@@ -125,7 +86,7 @@ export const saveLogs = async (logs: LogItem[]): Promise<void> => {
   const db = useDb();
   await db.batch(
     logs.map((log) => ({
-      sql: `INSERT OR REPLACE INTO logs (date, slug, shift, provider, assigned, supervised, triaged)
+      sql: `INSERT OR REPLACE INTO logs (date, site, shift, provider, assigned, supervised, bounty)
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
       args: [
         log.date,
@@ -134,7 +95,7 @@ export const saveLogs = async (logs: LogItem[]): Promise<void> => {
         log.provider,
         log.assigned,
         log.supervised,
-        log.triaged,
+        log.triaged, // stored in the 'bounty' column
       ],
     })),
     "write",
