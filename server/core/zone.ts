@@ -128,7 +128,7 @@ const movePointer = (params: {
 
   while (true) {
     const nextIndex = getNextIndex({ zone, which, offset });
-    const nextShift = shifts[zone.shifts[nextIndex]];
+    const nextShift = shifts[zone.shifts[nextIndex]!]!;
     if (which === "super" && nextShift.role !== "physician") {
       offset = moreOffset();
       continue;
@@ -171,7 +171,7 @@ const provideSuper = (params: {
   if (zone.super === null) {
     throw Error(`No zone.super set for zone: ${zone.slug}`);
   }
-  const supervisorId = zone.shifts[zone.super];
+  const supervisorId = zone.shifts[zone.super]!;
   movePointer({ zone, shifts, which: "super", offset: 1 });
   return supervisorId;
 };

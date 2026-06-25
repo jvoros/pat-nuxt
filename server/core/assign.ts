@@ -47,7 +47,7 @@ const assign = (
       shifts: board.shifts,
     });
     ShiftModule.adjustCount({
-      shift: board.shifts[superId],
+      shift: board.shifts[superId]!,
       type: "supervised",
       amount: 1,
     });
@@ -86,11 +86,11 @@ const toZone = (
     room: string;
   },
 ): void => {
-  const zone = board.zones[params.zoneSlug];
+  const zone = BoardModule.getZone(params.zoneSlug, board);
   if (zone.next === null) {
     throw Error(`No zone.next set for ${zone.slug}`);
   }
-  const shiftId = zone.shifts[zone.next];
+  const shiftId = zone.shifts[zone.next]!;
   const shift = BoardModule.getShift(shiftId, board);
 
   assign(board, { ...params, shiftId });
@@ -121,6 +121,7 @@ const reassign = (
 ): void => {
   const { eventId, newShiftId } = params;
   const event = board.events[eventId];
+  if (!event) throw Error(`No event found for id: ${eventId}`);
   if (event.assign === undefined) {
     throw Error(`No event.assign set for event: ${event.id}`);
   }
@@ -170,7 +171,9 @@ const changeRoom = (
   params: { eventId: BoardEvent["id"]; newRoom: string },
 ): void => {
   const { eventId, newRoom } = params;
-  EventModule.changeRoom({ event: board.events[eventId], newRoom });
+  const event = board.events[eventId];
+  if (!event) throw Error(`No event found for id: ${eventId}`);
+  EventModule.changeRoom({ event, newRoom });
 };
 
 export default {

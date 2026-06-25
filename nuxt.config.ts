@@ -4,5 +4,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   alias: {
     "#core": "./server/core",
+    "#core/*": "./server/core/*",
+  },
+  runtimeConfig: {
+    tursoUrl: "", // overridden by NUXT_TURSO_URL
+    tursoAuthToken: "", // overridden by NUXT_TURSO_AUTH_TOKEN
   },
 });

@@ -37,6 +37,7 @@ const make = (params: { slug: string; siteConfig: SiteConfig }): Board => {
     (slug: string) => siteConfig.zones[slug],
   );
   zoneConfig.forEach((z) => {
+    if (!z) return;
     const zone = ZoneModule.make(z);
     board.zoneOrder.push(zone.slug);
     board.zones[zone.slug] = zone;
@@ -140,7 +141,7 @@ const leaveZone = (
   }
 
   // leave zone
-  const leaveZone = board.zones[zoneSlug];
+  const leaveZone = getZone(zoneSlug, board);
   ZoneModule.leaveZone({
     leaveShiftId: shiftId,
     zone: leaveZone,
@@ -148,7 +149,7 @@ const leaveZone = (
   });
 
   // event
-  const shift = board.shifts[shiftId];
+  const shift = getShift(shiftId, board);
   const eventMessage = `${shift.first} ${shift.last} left ${leaveZone.name}`;
   addEventMessage(board, eventMessage);
 };
@@ -226,7 +227,10 @@ const adjustRotation = (
   ZoneModule.movePointer({ zone, shifts: board.shifts, which, offset });
 
   // event
-  const shift = getShift(zone.shifts[zone[which]!], board);
+  const shiftId = zone.shifts[zone[which]!];
+  if (!shiftId)
+    throw Error(`No shift at pointer ${which} for zone ${zone.slug}`);
+  const shift = getShift(shiftId, board);
   const superFlag = which === "super" ? "supervisor" : "";
   const dirFlag = offset > 0 ? "forward" : "back";
   const eventMessage = `Moved ${zone.name} ${superFlag} ${dirFlag} to ${shift.first} ${shift.last}`;
@@ -261,6 +265,7 @@ const buildLogs = (site: string, board: Board): LogItem[] => {
   const logs = [];
   for (const shiftId in board.shifts) {
     const shift = board.shifts[shiftId];
+    if (!shift) continue;
     const log: LogItem = {
       date: board.date,
       site,
@@ -294,12 +299,12 @@ const addEventMessage = (board: Board, eventMessage: string): void => {
   addEvent(board, eventParams);
 };
 
-const getShift = (id: Shift["id"], board: Board): Shift => board.shifts[id];
+const getShift = (id: Shift["id"], board: Board): Shift => board.shifts[id]!;
 
-const getZone = (slug: Zone["slug"], board: Board): Zone => board.zones[slug];
+const getZone = (slug: Zone["slug"], board: Board): Zone => board.zones[slug]!;
 
 const zonesWithShift = (id: Shift["id"], zones: IndexZone): Zone["slug"][] =>
-  Object.keys(zones).filter((slug) => zones[slug].shifts.includes(id));
+  Object.keys(zones).filter((slug) => zones[slug]?.shifts.includes(id));
 
 // EXPORT
 
