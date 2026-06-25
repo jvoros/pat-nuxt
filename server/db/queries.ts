@@ -1,5 +1,5 @@
 import { useDb } from "./client";
-import type { Board, LogItem, SiteConfig } from "../core/types";
+import type { Board, SiteConfig } from "../core/types";
 
 // ---- Types ----------------------------------------------------------------
 
@@ -15,6 +15,21 @@ export type UndoRow = {
   site: string;
   date: number;
 };
+
+// ---- Helpers --------------------------------------------------------------
+
+// Builds log rows from the current board state. Called on every board save
+// so logs are always current and never need special end-of-day handling.
+const buildLogArgs = (board: Board) =>
+  Object.values(board.shifts).map((shift) => [
+    board.date,
+    board.slug,
+    shift.name,
+    `${shift.first} ${shift.last}`,
+    shift.assigned,
+    shift.supervised,
+    shift.triaged, // stored in the 'bounty' column
+  ]);
 
 // ---- Sites ----------------------------------------------------------------
 
@@ -33,15 +48,28 @@ export const getSite = async (slug: string): Promise<SiteRow | null> => {
   };
 };
 
+// Saves the board state and rewrites the log rows for this board in one
+// atomic batch. Works identically for normal actions and undos.
 export const updateBoard = async (
   slug: string,
   board: Board,
 ): Promise<void> => {
   const db = useDb();
-  await db.execute({
-    sql: "UPDATE sites SET board = ? WHERE slug = ?",
-    args: [JSON.stringify(board), slug],
-  });
+  const logRows = buildLogArgs(board);
+  await db.batch(
+    [
+      {
+        sql: "UPDATE sites SET board = ? WHERE slug = ?",
+        args: [JSON.stringify(board), slug],
+      },
+      ...logRows.map((args) => ({
+        sql: `INSERT OR REPLACE INTO logs (date, site, shift, provider, assigned, supervised, bounty)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args,
+      })),
+    ],
+    "write",
+  );
 };
 
 // ---- Undos ----------------------------------------------------------------
@@ -71,33 +99,13 @@ export const getUndo = async (id: number): Promise<UndoRow | null> => {
   };
 };
 
-export const clearUndos = async (slug: string, date: number): Promise<void> => {
+// Removes undo rows older than 48 hours for a given site. Called on board reset.
+// Keeping 48 hours of history allows recovery if a board is accidentally reset.
+export const clearUndos = async (slug: string): Promise<void> => {
   const db = useDb();
+  const cutoff = Date.now() - 48 * 60 * 60 * 1000;
   await db.execute({
-    sql: "DELETE FROM undos WHERE site = ? AND date = ?",
-    args: [slug, date],
+    sql: "DELETE FROM undos WHERE site = ? AND date < ?",
+    args: [slug, cutoff],
   });
-};
-
-// ---- Logs -----------------------------------------------------------------
-
-export const saveLogs = async (logs: LogItem[]): Promise<void> => {
-  if (logs.length === 0) return;
-  const db = useDb();
-  await db.batch(
-    logs.map((log) => ({
-      sql: `INSERT OR REPLACE INTO logs (date, site, shift, provider, assigned, supervised, bounty)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [
-        log.date,
-        log.site,
-        log.shift,
-        log.provider,
-        log.assigned,
-        log.supervised,
-        log.triaged, // stored in the 'bounty' column
-      ],
-    })),
-    "write",
-  );
 };
