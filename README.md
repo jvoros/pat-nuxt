@@ -45,10 +45,13 @@ When the first shift of a new day signs in, the board resets and the previous da
 │   │   ├── event.ts   # Board event construction
 │   │   └── uid.ts     # ID generation (crypto.randomUUID)
 │   │
-│   └── db/            # Database access — Turso/libsql
-│       ├── client.ts  # Singleton libsql client (useDb)
-│       ├── queries.ts # All typed query functions
-│       └── schema.sql # Reference schema for the existing Turso database
+│   ├── db/            # Database access — Turso/libsql
+│   │   ├── client.ts  # Singleton libsql client (useDb)
+│   │   ├── queries.ts # All typed query functions
+│   │   └── schema.sql # Reference schema for the existing Turso database
+│   │
+│   └── utils/
+│       └── auth.ts    # Access code hashing and verification
 │
 ├── app/               # Vue frontend (not yet built)
 │   └── app.vue
@@ -119,12 +122,12 @@ The board is a single JSON object. Key fields:
 
 ```ts
 type Board = {
-  slug: string;          // site identifier
-  date: number;          // timestamp for the board day
-  zoneOrder: string[];   // display order of zones
-  timeline: string[];    // ordered list of recent event IDs
-  zones: IndexZone;      // zone state keyed by slug
-  shifts: IndexShift;    // shift state keyed by id
+  slug: string;            // site identifier
+  date: number;            // timestamp for the board day
+  zoneOrder: string[];     // display order of zones
+  timeline: string[];      // ordered list of recent event IDs
+  zones: IndexZone;        // zone state keyed by slug
+  shifts: IndexShift;      // shift state keyed by id
   events: IndexBoardEvent; // event log keyed by id
 }
 ```
@@ -136,20 +139,22 @@ type Board = {
 Connects to a Turso-hosted SQLite database. The schema has three tables:
 
 ### `sites`
-One row per emergency department. Stores the site config JSON and the current active board JSON on the same row.
+One row per emergency department. Stores the site config JSON, the current active board JSON, and the hashed access code — all on the same row.
 
 ```
-slug TEXT PRIMARY KEY
-site TEXT   -- JSON: full SiteConfig (zones, schedule, providers, rooms)
-board TEXT  -- JSON: current Board state (null until first sign-in)
+slug             TEXT PRIMARY KEY
+site             TEXT  -- JSON: full SiteConfig (zones, schedule, providers, rooms)
+board            TEXT  -- JSON: current Board state (null until first sign-in)
+access_code_hash TEXT  -- HMAC-SHA256 hash of the site access code
+access_code_salt TEXT  -- per-site random salt
 ```
 
 ### `undos`
-One row per saved prior board state. Each action saves the pre-action board here before applying the mutation. The `undo` field on the board JSON holds the row ID to restore.
+One row per saved prior board state. Each action saves the pre-action board here before applying the mutation. The `undo` field on the board JSON holds the row ID to restore. Rows older than 48 hours are pruned on each daily reset, giving a recovery window for accidental resets.
 
 ```
 id    INTEGER PRIMARY KEY
-board TEXT    -- JSON: Board state before the action
+board TEXT  -- JSON: Board state before the action
 site  TEXT
 date  INTEGER
 ```
@@ -171,6 +176,44 @@ assigned, supervised, bounty -- bounty = triaged count (legacy column name)
 | `addUndo(board)` | Inserts a board snapshot into `undos`, returns the new row ID |
 | `getUndo(id)` | Retrieves a prior board snapshot by ID |
 | `clearUndos(slug)` | Deletes undo rows older than 48 hours for a site; called on daily reset |
+| `getAccessCode(slug)` | Returns the stored hash and salt for a site |
+| `setAccessCode(slug, hash, salt)` | Stores a new hashed access code for a site |
+
+---
+
+## Authentication (`server/utils/auth.ts`)
+
+Sites are protected by a shared access code — one code per emergency department, known by all staff on shift. There are no per-user accounts.
+
+Access codes are stored as **HMAC-SHA256 hashes with a per-site random salt**. The plaintext code is never stored. The salt ensures the same code produces a different hash at each site.
+
+| Function | Description |
+|---|---|
+| `generateSalt()` | Generates a random 16-byte hex salt |
+| `hashCode(code, salt)` | Hashes a code with a site's salt (normalises whitespace and case) |
+| `verifyCode(submitted, storedHash, salt)` | Returns `true` if the submitted code matches |
+
+### Setting an access code for a site
+
+There is no admin UI yet. Set a code directly via script or the Turso shell:
+
+```ts
+import { generateSalt, hashCode } from './server/utils/auth'
+import { setAccessCode } from './server/db/queries'
+
+const salt = generateSalt()
+const hash = hashCode('your-access-code', salt)
+await setAccessCode('smh', hash, salt)
+```
+
+### Database migration
+
+The `access_code_hash` and `access_code_salt` columns do not exist in the original schema. Run these against the live database once:
+
+```sql
+ALTER TABLE sites ADD COLUMN access_code_hash TEXT;
+ALTER TABLE sites ADD COLUMN access_code_salt TEXT;
+```
 
 ---
 
@@ -183,11 +226,7 @@ Nuxt maps `NUXT_*` env vars to `runtimeConfig` automatically.
 | `NUXT_TURSO_URL` | `tursoUrl` | Turso database URL |
 | `NUXT_TURSO_AUTH_TOKEN` | `tursoAuthToken` | Turso auth token |
 
-Copy `.env` and fill in your credentials from the [Turso dashboard](https://app.turso.tech):
-
-```sh
-cp .env .env.local  # or just edit .env directly — it is gitignored
-```
+Fill in your credentials from the [Turso dashboard](https://app.turso.tech) in `.env` — it is gitignored.
 
 ---
 

@@ -31,6 +31,44 @@ const buildLogArgs = (board: Board) =>
     shift.triaged, // stored in the 'bounty' column
   ]);
 
+// ---- Access codes --------------------------------------------------------
+
+export type AccessCodeRow = {
+  hash: string;
+  salt: string;
+};
+
+// Returns the stored hash and salt for a site, used to verify a login attempt.
+export const getAccessCode = async (
+  slug: string,
+): Promise<AccessCodeRow | null> => {
+  const db = useDb();
+  const result = await db.execute({
+    sql: "SELECT access_code_hash, access_code_salt FROM sites WHERE slug = ?",
+    args: [slug],
+  });
+  const row = result.rows[0];
+  if (!row || !row.access_code_hash || !row.access_code_salt) return null;
+  return {
+    hash: row.access_code_hash as string,
+    salt: row.access_code_salt as string,
+  };
+};
+
+// Stores a new hashed access code for a site.
+// Call hashCode() and generateSalt() from server/utils/auth.ts before saving.
+export const setAccessCode = async (
+  slug: string,
+  hash: string,
+  salt: string,
+): Promise<void> => {
+  const db = useDb();
+  await db.execute({
+    sql: "UPDATE sites SET access_code_hash = ?, access_code_salt = ? WHERE slug = ?",
+    args: [hash, salt, slug],
+  });
+};
+
 // ---- Sites ----------------------------------------------------------------
 
 export const getSite = async (slug: string): Promise<SiteRow | null> => {

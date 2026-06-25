@@ -5,10 +5,16 @@
 -- 'site' is a JSON blob of the full site config (zones, zoneOrder, schedule, providers, rooms).
 -- 'board' is a JSON blob of the current active board state, updated on every action.
 CREATE TABLE sites (
-    slug TEXT PRIMARY KEY,
-    site TEXT NOT NULL,   -- JSON: SiteConfig
-    board TEXT            -- JSON: Board (null until first sign-in of the day)
+    slug             TEXT PRIMARY KEY,
+    site             TEXT NOT NULL,   -- JSON: SiteConfig
+    board            TEXT,            -- JSON: Board (null until first sign-in)
+    access_code_hash TEXT,            -- HMAC-SHA256 hash of the access code
+    access_code_salt TEXT             -- per-site random salt
 );
+
+-- Migration: add access code columns to an existing sites table
+-- ALTER TABLE sites ADD COLUMN access_code_hash TEXT;
+-- ALTER TABLE sites ADD COLUMN access_code_salt TEXT;
 
 -- End-of-day shift activity log. Written when the board resets in the morning.
 -- 'bounty' is a legacy alias for the triaged count.
