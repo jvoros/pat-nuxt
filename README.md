@@ -215,15 +215,6 @@ SET access_code_hash = '<hash>', access_code_salt = '<salt>'
 WHERE slug = 'smh';
 ```
 
-### Database migration
-
-The `access_code_hash` and `access_code_salt` columns do not exist in the original schema. Run these against the live database once:
-
-```sql
-ALTER TABLE sites ADD COLUMN access_code_hash TEXT;
-ALTER TABLE sites ADD COLUMN access_code_salt TEXT;
-```
-
 ---
 
 ## Environment variables
