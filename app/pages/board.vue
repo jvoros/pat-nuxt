@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { session, clear: clearSession } = useUserSession();
+const slug = computed(() => session.value?.user?.slug);
 const { board, connected } = useSocket();
 
 async function logout() {
@@ -12,7 +13,7 @@ async function logout() {
 <template>
     <div>
         <header>
-            <span>{{ session?.slug }}</span>
+            <span>{{ slug }}</span>
             <span>{{ connected ? "Live" : "Connecting…" }}</span>
             <button @click="logout">Sign out</button>
         </header>

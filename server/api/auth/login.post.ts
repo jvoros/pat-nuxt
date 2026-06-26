@@ -5,7 +5,10 @@ export default defineEventHandler(async (event) => {
   const { slug, code } = await readBody<{ slug: string; code: string }>(event);
 
   if (!slug || !code) {
-    throw createError({ statusCode: 400, message: "slug and code are required" });
+    throw createError({
+      statusCode: 400,
+      message: "slug and code are required",
+    });
   }
 
   const site = await getAccessCode(slug);
@@ -14,7 +17,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: "Invalid access code" });
   }
 
-  await setUserSession(event, { slug });
-
+  await setUserSession(event, { user: { slug } });
   return { ok: true };
 });

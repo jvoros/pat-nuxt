@@ -179,13 +179,12 @@ Access codes are stored as **HMAC-SHA256 hashes with a per-site random salt**. T
 **Step 1** — Generate a salt and hash in Node:
 
 ```sh
-node --input-type=module << 'EOF'
-import { randomBytes, createHmac } from 'node:crypto';
-const salt = randomBytes(16).toString('hex');
-const hash = createHmac('sha256', salt).update('your-code').digest('hex');
-console.log('salt:', salt);
-console.log('hash:', hash);
-EOF
+node -e "import('node:crypto').then(({randomBytes,createHmac})=>{
+  const salt=randomBytes(16).toString('hex');
+  const hash=createHmac('sha256',salt).update('your-code').digest('hex');
+  console.log('salt:',salt);
+  console.log('hash:',hash);
+})"
 ```
 
 **Step 2** — Paste the output into a Turso SQL statement:

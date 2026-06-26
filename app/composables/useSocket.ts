@@ -6,8 +6,8 @@ export const useSocket = () => {
   const connected = useState<boolean>("connected", () => false);
 
   // Only open a WebSocket on the client, and only when logged in
-  if (import.meta.client && session.value?.slug) {
-    const slug = session.value.slug;
+  if (import.meta.client && session.value?.user?.slug) {
+    const slug = session.value.user.slug;
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${protocol}://${location.host}/ws/${slug}`);
 

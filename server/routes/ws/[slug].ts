@@ -7,12 +7,12 @@ export default defineWebSocketHandler({
 
     const session = await getUserSession(request as any);
 
-    if (!session?.slug || session.slug !== slug) {
+    if (!session?.user?.slug || session.user.slug !== slug) {
       throw new Response("Unauthorized", { status: 401 });
     }
 
     // Store slug in request context so open/close hooks can access it
-    request.context.slug = session.slug;
+    request.context.slug = session.user.slug;
   },
 
   open(peer) {
