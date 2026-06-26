@@ -27,6 +27,8 @@ When the first shift of a new day signs in, the board resets and the previous da
 | Language | TypeScript (strict) |
 | Database | SQLite via [Turso](https://turso.tech) |
 | DB client | `@libsql/client` |
+| Sessions | `nuxt-auth-utils` (sealed cookies) |
+| Real-time | WebSockets via Nitro/CrossWS |
 | Testing | Vitest via `@nuxt/test-utils` |
 
 ---
@@ -35,28 +37,44 @@ When the first shift of a new day signs in, the board resets and the previous da
 
 ```
 ├── server/
-│   ├── core/          # Business logic — pure functions, no framework dependencies
-│   │   ├── types.ts   # All shared TypeScript types
-│   │   ├── index.ts   # Public API: the Core object
-│   │   ├── board.ts   # Board-level operations (sign in/out, zones, triage, etc.)
-│   │   ├── assign.ts  # Patient assignment logic
-│   │   ├── zone.ts    # Zone and rotation pointer logic
-│   │   ├── shift.ts   # Shift construction and count management
-│   │   ├── event.ts   # Board event construction
-│   │   └── uid.ts     # ID generation (crypto.randomUUID)
+│   ├── core/              # Business logic — pure functions, no framework dependencies
+│   │   ├── types.ts       # All shared TypeScript types
+│   │   ├── index.ts       # Public API: the Core object
+│   │   ├── board.ts       # Board-level operations (sign in/out, zones, triage, etc.)
+│   │   ├── assign.ts      # Patient assignment logic
+│   │   ├── zone.ts        # Zone and rotation pointer logic
+│   │   ├── shift.ts       # Shift construction and count management
+│   │   ├── event.ts       # Board event construction
+│   │   └── uid.ts         # ID generation (crypto.randomUUID)
 │   │
-│   ├── db/            # Database access — Turso/libsql
-│   │   ├── client.ts  # Singleton libsql client (useDb)
-│   │   ├── queries.ts # All typed query functions
-│   │   └── schema.sql # Reference schema for the existing Turso database
+│   ├── api/
+│   │   └── auth/
+│   │       ├── login.post.ts   # Verifies access code, sets session
+│   │       └── logout.post.ts  # Clears session
+│   │
+│   ├── routes/
+│   │   └── ws/
+│   │       └── [slug].ts  # WebSocket handler — one room per site
+│   │
+│   ├── db/                # Database access — Turso/libsql
+│   │   ├── client.ts      # Singleton libsql client (useDb)
+│   │   ├── queries.ts     # All typed query functions
+│   │   └── schema.sql     # Reference schema for the existing Turso database
 │   │
 │   └── utils/
-│       └── auth.ts    # Access code hashing and verification
+│       └── auth.ts        # Access code hashing and verification
 │
-├── app/               # Vue frontend (not yet built)
+├── app/
+│   ├── composables/
+│   │   └── useSocket.ts   # Client-side WebSocket connection and board state
+│   ├── middleware/
+│   │   └── auth.global.ts # Route guard — redirects based on session state
+│   ├── pages/
+│   │   ├── login.vue      # Login form
+│   │   └── board.vue      # Board page (stub)
 │   └── app.vue
 │
-├── tests/             # Unit tests for server/core
+├── tests/                 # Unit tests for server/core
 │   ├── dummy.config.ts
 │   ├── assign.test.ts
 │   ├── board.test.ts
@@ -66,7 +84,7 @@ When the first shift of a new day signs in, the board resets and the previous da
 │
 ├── nuxt.config.ts
 ├── vitest.config.ts
-└── .env               # Local dev credentials (not committed)
+└── .env                   # Local dev credentials (not committed)
 ```
 
 ---
@@ -134,6 +152,78 @@ type Board = {
 
 ---
 
+## Authentication and sessions
+
+Sites are protected by a shared access code — one code per emergency department, known by all staff on shift. There are no per-user accounts.
+
+### Login flow
+
+1. User submits site slug and access code to `POST /api/auth/login`
+2. Server fetches the stored hash and salt for that site via `getAccessCode(slug)`
+3. The submitted code is verified with `verifyCode(submitted, hash, salt)`
+4. On success, `setUserSession({ slug })` stores the site slug in an encrypted cookie
+5. Client refreshes its session and navigates to `/board`
+
+Session cookies are encrypted using `NUXT_SESSION_PASSWORD` via `nuxt-auth-utils`. The plaintext access code is never stored.
+
+### Route protection
+
+`app/middleware/auth.global.ts` runs on every route change:
+- Unauthenticated users are redirected to `/login`
+- Authenticated users visiting `/login` are redirected to `/board`
+
+### Access codes
+
+Access codes are stored as **HMAC-SHA256 hashes with a per-site random salt**. To set a code for a site:
+
+**Step 1** — Generate a salt and hash in Node:
+
+```sh
+node --input-type=module << 'EOF'
+import { randomBytes, createHmac } from 'node:crypto';
+const salt = randomBytes(16).toString('hex');
+const hash = createHmac('sha256', salt).update('your-code').digest('hex');
+console.log('salt:', salt);
+console.log('hash:', hash);
+EOF
+```
+
+**Step 2** — Paste the output into a Turso SQL statement:
+
+```sql
+UPDATE sites
+SET access_code_hash = '<hash>', access_code_salt = '<salt>'
+WHERE slug = 'smh';
+```
+
+---
+
+## Real-time updates (WebSockets)
+
+Board state is kept in sync across all connected users via WebSockets. Nitro's built-in pub/sub handles broadcasting.
+
+### Server: `server/routes/ws/[slug].ts`
+
+Each site has its own WebSocket endpoint at `/ws/[slug]`. On connection:
+
+1. The `upgrade` hook reads the session cookie and rejects with 401 if the session slug doesn't match the URL slug
+2. On `open`, the peer subscribes to the site's pub/sub topic
+3. Any server route can broadcast an updated board to all connected users with `peer.publish(slug, board)`
+4. On `close`, the peer unsubscribes
+
+### Client: `app/composables/useSocket.ts`
+
+`useSocket()` opens a WebSocket to `/ws/[slug]` on the client once the session is available. It exposes:
+
+| Return value | Description |
+|---|---|
+| `board` | Reactive `Board \| null` — updated on every server broadcast |
+| `connected` | Reactive boolean — WebSocket connection status |
+
+Both are backed by `useState` so they are shared across all components that call `useSocket()`.
+
+---
+
 ## Database layer (`server/db`)
 
 Connects to a Turso-hosted SQLite database. The schema has three tables:
@@ -181,52 +271,22 @@ assigned, supervised, bounty -- bounty = triaged count (legacy column name)
 
 ---
 
-## Authentication (`server/utils/auth.ts`)
-
-Sites are protected by a shared access code — one code per emergency department, known by all staff on shift. There are no per-user accounts.
-
-Access codes are stored as **HMAC-SHA256 hashes with a per-site random salt**. The plaintext code is never stored. The salt ensures the same code produces a different hash at each site.
-
-| Function | Description |
-|---|---|
-| `generateSalt()` | Generates a random 16-byte hex salt |
-| `hashCode(code, salt)` | Hashes a code with a site's salt (normalises whitespace and case) |
-| `verifyCode(submitted, storedHash, salt)` | Returns `true` if the submitted code matches |
-
-### Setting an access code for a site
-
-**Step 1** — Generate a salt and hash in Node:
-
-```sh
-node --input-type=module << 'EOF'
-import { randomBytes, createHmac } from 'node:crypto';
-const salt = randomBytes(16).toString('hex');
-const hash = createHmac('sha256', salt).update('your-code').digest('hex');
-console.log('salt:', salt);
-console.log('hash:', hash);
-EOF
-```
-
-**Step 2** — Paste the output into a Turso SQL statement:
-
-```sql
-UPDATE sites
-SET access_code_hash = '<hash>', access_code_salt = '<salt>'
-WHERE slug = 'smh';
-```
-
----
-
 ## Environment variables
 
 Nuxt maps `NUXT_*` env vars to `runtimeConfig` automatically.
 
-| Variable | `runtimeConfig` key | Description |
-|---|---|---|
-| `NUXT_TURSO_URL` | `tursoUrl` | Turso database URL |
-| `NUXT_TURSO_AUTH_TOKEN` | `tursoAuthToken` | Turso auth token |
+| Variable | Description |
+|---|---|
+| `NUXT_TURSO_URL` | Turso database URL |
+| `NUXT_TURSO_AUTH_TOKEN` | Turso auth token |
+| `NUXT_SESSION_PASSWORD` | Cookie encryption key — must be at least 32 characters |
 
-Fill in your credentials from the [Turso dashboard](https://app.turso.tech) in `.env` — it is gitignored.
+Generate a session password:
+```sh
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Fill in all values in `.env` — it is gitignored.
 
 ---
 
