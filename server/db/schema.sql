@@ -13,6 +13,7 @@ CREATE TABLE sites (
 );
 
 -- Migration: add access code columns to an existing sites table
+-- ADDED TO 'dev' DB 6/26/26
 -- ALTER TABLE sites ADD COLUMN access_code_hash TEXT;
 -- ALTER TABLE sites ADD COLUMN access_code_salt TEXT;
 

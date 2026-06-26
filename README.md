@@ -195,15 +195,24 @@ Access codes are stored as **HMAC-SHA256 hashes with a per-site random salt**. T
 
 ### Setting an access code for a site
 
-There is no admin UI yet. Set a code directly via script or the Turso shell:
+**Step 1** — Generate a salt and hash in Node:
 
-```ts
-import { generateSalt, hashCode } from './server/utils/auth'
-import { setAccessCode } from './server/db/queries'
+```sh
+node --input-type=module << 'EOF'
+import { randomBytes, createHmac } from 'node:crypto';
+const salt = randomBytes(16).toString('hex');
+const hash = createHmac('sha256', salt).update('your-code').digest('hex');
+console.log('salt:', salt);
+console.log('hash:', hash);
+EOF
+```
 
-const salt = generateSalt()
-const hash = hashCode('your-access-code', salt)
-await setAccessCode('smh', hash, salt)
+**Step 2** — Paste the output into a Turso SQL statement:
+
+```sql
+UPDATE sites
+SET access_code_hash = '<hash>', access_code_salt = '<salt>'
+WHERE slug = 'smh';
 ```
 
 ### Database migration
