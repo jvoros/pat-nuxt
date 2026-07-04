@@ -48,13 +48,15 @@ When the first shift of a new day signs in, the board resets and the previous da
 │   │   └── uid.ts         # ID generation (crypto.randomUUID)
 │   │
 │   ├── api/
-│   │   └── auth/
-│   │       ├── login.post.ts   # Verifies access code, sets session
-│   │       └── logout.post.ts  # Clears session
+│   │   ├── auth/
+│   │   │   ├── login.post.ts   # Verifies access code, sets session
+│   │   │   └── logout.post.ts  # Clears session
+│   │   └── board/
+│   │       └── [slug].get.ts   # Returns current board and site config for initial page load
 │   │
 │   ├── routes/
 │   │   └── ws/
-│   │       └── [slug].ts  # WebSocket handler — one room per site
+│   │       └── [slug].ts  # WebSocket handler — one room per site, handles all board actions
 │   │
 │   ├── db/                # Database access — Turso/libsql
 │   │   ├── client.ts      # Singleton libsql client (useDb)
@@ -62,11 +64,12 @@ When the first shift of a new day signs in, the board resets and the previous da
 │   │   └── schema.sql     # Reference schema for the existing Turso database
 │   │
 │   └── utils/
-│       └── auth.ts        # Access code hashing and verification
+│       ├── auth.ts        # Access code hashing and verification
+│       └── dispatch.ts    # Executes board actions, persists state, signals reset
 │
 ├── app/
 │   ├── composables/
-│   │   └── useSocket.ts   # Client-side WebSocket connection and board state
+│   │   └── useBoard.ts    # Board state, WebSocket connection, and action sender
 │   ├── middleware/
 │   │   └── auth.global.ts # Route guard — redirects based on session state
 │   ├── pages/
@@ -104,12 +107,12 @@ The `oldboard` is passed to `addUndo` in the database layer so it can be restore
 
 ### The `Core` public API
 
-Server routes interact with `Core` exclusively. It exposes:
+Server routes interact with `Core` exclusively through `dispatch`. It exposes:
 
 | Method | Description |
 |---|---|
 | `Core.build` | Creates a fresh empty board from a site config |
-| `Core.signIn` | Adds a provider/schedule as a new shift; triggers daily reset if applicable |
+| `Core.signIn` | Adds a provider/schedule as a new shift; resets the board if the schedule's `reset` flag is set |
 | `Core.signOut` | Moves a shift to the Off Rotation zone |
 | `Core.joinZone` | Adds a shift to an additional zone |
 | `Core.leaveZone` | Removes a shift from a zone |
@@ -201,25 +204,61 @@ WHERE slug = 'smh';
 
 Board state is kept in sync across all connected users via WebSockets. Nitro's built-in pub/sub handles broadcasting.
 
-### Server: `server/routes/ws/[slug].ts`
+### Server
 
-Each site has its own WebSocket endpoint at `/ws/[slug]`. On connection:
+Each site has its own WebSocket endpoint at `/ws/[slug]` (`server/routes/ws/[slug].ts`). On connection:
 
 1. The `upgrade` hook reads the session cookie and rejects with 401 if the session slug doesn't match the URL slug
 2. On `open`, the peer subscribes to the site's pub/sub topic
-3. Any server route can broadcast an updated board to all connected users with `peer.publish(slug, board)`
-4. On `close`, the peer unsubscribes
+3. On `message`, the action is passed to `dispatch` which runs it through `Core`, persists the result, and returns the updated board
+4. The updated board is broadcast to all connected users at that site, including the sender
+5. On `close`, the peer unsubscribes
 
-### Client: `app/composables/useSocket.ts`
+All board mutations go through the WebSocket. The client sends:
 
-`useSocket()` opens a WebSocket to `/ws/[slug]` on the client once the session is available. It exposes:
+```json
+{ "action": "assignToZone", "payload": { "zoneSlug": "main", "mode": "walkin", "room": "4" } }
+```
 
-| Return value | Description |
-|---|---|
-| `board` | Reactive `Board \| null` — updated on every server broadcast |
-| `connected` | Reactive boolean — WebSocket connection status |
+The server responds to all connected clients with:
 
-Both are backed by `useState` so they are shared across all components that call `useSocket()`.
+```json
+{ "ok": true, "board": { ... } }
+```
+
+Errors are returned only to the sender:
+
+```json
+{ "ok": false, "error": "Cannot leave last zone with shift" }
+```
+
+Undo is also handled via the WebSocket — send `{ "action": "undo" }` with no payload.
+
+### `dispatch` (`server/utils/dispatch.ts`)
+
+Sits between the WebSocket handler and `Core`. For every action it:
+1. Fetches the current board from the database
+2. Calls `Core[action](board, payload)`
+3. Saves the pre-action board to `undos` and writes the updated board via `updateBoard`
+4. Calls `clearUndos` if the action triggered a daily reset (`result.reset === true`)
+
+### Client: `app/composables/useBoard.ts`
+
+`useBoard()` is the single point of contact between the UI and the server. It manages:
+
+- An initial `GET /api/board/[slug]` fetch to populate board and config state before the WebSocket connects
+- The WebSocket connection to `/ws/[slug]`
+- Reactive `board`, `config`, and `connected` state shared across all components via `useState`
+- A `send(action)` function for dispatching actions over the WebSocket
+
+```ts
+const { board, config, connected, send } = useBoard();
+
+// Example: assign next patient in a zone
+send({ action: "assignToZone", payload: { zoneSlug: "main", mode: "walkin", room: "4" } });
+```
+
+The composable is a singleton — only one WebSocket connection is opened per session regardless of how many components call `useBoard()`. Call `resetBoard()` on logout to tear it down.
 
 ---
 
@@ -249,7 +288,7 @@ date  INTEGER
 ```
 
 ### `logs`
-Running shift activity totals, rewritten on every board save. Used for end-of-day reporting. Because logs are written atomically with every `updateBoard` call, they are always current — including after an undo.
+Running shift activity totals, rewritten on every board save via `updateBoard`. Used for end-of-day reporting. Because logs are written atomically with every board update, they are always current — including after an undo.
 
 ```
 date, site, shift, provider  -- composite primary key
