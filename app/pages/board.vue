@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { session, clear: clearSession } = useUserSession();
 const slug = computed(() => session.value?.user?.slug);
-const { board, connected } = useBoard();
+const { board, config, connected } = useBoard();
 
 async function logout() {
     await $fetch("/api/auth/logout", { method: "POST" });
@@ -14,10 +14,13 @@ async function logout() {
 <template>
     <div>
         <header>
-            <span>{{ slug }}</span>
-            <span>{{ connected ? "Live" : "Connecting…" }}</span>
+            <h1>{{ slug }}</h1>
+            <div>WS: {{ connected ? "Live" : "Connecting…" }}</div>
             <button @click="logout">Sign out</button>
         </header>
+        <h2>Config</h2>
+        <pre>{{ config }}</pre>
+        <h2>Board</h2>
         <pre>{{ board }}</pre>
     </div>
 </template>
