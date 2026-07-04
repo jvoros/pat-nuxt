@@ -1,14 +1,7 @@
 <script setup lang="ts">
-const { session, clear: clearSession } = useUserSession();
+const { session, logout } = useAuth();
 const slug = computed(() => session.value?.user?.slug);
-const { board, config, connected } = useBoard();
-
-async function logout() {
-    await $fetch("/api/auth/logout", { method: "POST" });
-    await clearSession();
-    resetBoard();
-    await navigateTo("/login");
-}
+const { board, connected } = useBoard();
 </script>
 
 <template>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-const { loggedIn, fetch: refreshSession } = useUserSession();
+const { loggedIn, login } = useAuth();
 
-// If already logged in, skip the login page
 if (loggedIn.value) {
     await navigateTo("/board");
 }
@@ -11,16 +10,11 @@ const code = ref("");
 const error = ref("");
 const loading = ref(false);
 
-async function login() {
+async function submit() {
     error.value = "";
     loading.value = true;
     try {
-        await $fetch("/api/auth/login", {
-            method: "POST",
-            body: { slug: slug.value, code: code.value },
-        });
-        await refreshSession();
-        await navigateTo("/board");
+        await login(slug.value, code.value);
     } catch {
         error.value = "Invalid site or access code.";
     } finally {
@@ -32,7 +26,7 @@ async function login() {
 <template>
     <div>
         <h1>Sign In</h1>
-        <form @submit.prevent="login">
+        <form @submit.prevent="submit">
             <input
                 v-model="slug"
                 type="text"
