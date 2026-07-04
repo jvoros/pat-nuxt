@@ -25,6 +25,7 @@ When the first shift of a new day signs in, the board resets and the previous da
 |---|---|
 | Framework | [Nuxt 4](https://nuxt.com) |
 | Language | TypeScript (strict) |
+| UI | [Nuxt UI v4](https://ui.nuxt.com) + Tailwind CSS v4 |
 | Database | SQLite via [Turso](https://turso.tech) |
 | DB client | `@libsql/client` |
 | Sessions | `nuxt-auth-utils` (sealed cookies) |
@@ -257,6 +258,45 @@ const { board, config, connected, send } = useBoard();
 // Example: assign next patient in a zone
 send({ action: "assignToZone", payload: { zoneSlug: "main", mode: "walkin", room: "4" } });
 ```
+
+The composable is a singleton — only one WebSocket connection is opened per session regardless of how many components call `useBoard()`. Call `resetBoard()` on logout to tear it down.
+
+---
+
+## Client composables
+
+### `useAuth` (`app/composables/useAuth.ts`)
+
+Centralises all authentication logic. Wraps `nuxt-auth-utils` so pages never call `$fetch` or `useUserSession` directly.
+
+```ts
+const { loggedIn, session, login, logout } = useAuth();
+```
+
+| Return value | Description |
+|---|---|
+| `loggedIn` | Reactive boolean — true if a valid session cookie exists |
+| `session` | Reactive session object — contains `user.slug` |
+| `login(slug, code)` | Posts credentials, refreshes session, navigates to `/board` |
+| `logout()` | Clears session, tears down the board connection, navigates to `/login` |
+
+### `useBoard` (`app/composables/useBoard.ts`)
+
+Centralises all board communication. Any page or component that needs board state or wants to dispatch an action calls `useBoard()`.
+
+```ts
+const { board, config, connected, send } = useBoard();
+
+// Example: assign next patient in a zone
+send({ action: "assignToZone", payload: { zoneSlug: "main", mode: "walkin", room: "4" } });
+```
+
+| Return value | Description |
+|---|---|
+| `board` | Reactive `Board \| null` — updated on every server broadcast |
+| `config` | Reactive `SiteConfig \| null` — populated on initial fetch |
+| `connected` | Reactive boolean — WebSocket connection status |
+| `send(action)` | Sends a board action over the WebSocket |
 
 The composable is a singleton — only one WebSocket connection is opened per session regardless of how many components call `useBoard()`. Call `resetBoard()` on logout to tear it down.
 

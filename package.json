@@ -13,8 +13,10 @@
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
+    "@nuxt/ui": "^4.9.0",
     "nuxt": "^4.4.8",
     "nuxt-auth-utils": "^0.5.29",
+    "tailwindcss": "^4.3.2",
     "vue": "^3.5.38",
     "vue-router": "^5.1.0"
   },

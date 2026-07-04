@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { session, logout } = useAuth();
 const slug = computed(() => session.value?.user?.slug);
-const { board, connected } = useBoard();
+const { board, config, connected } = useBoard();
 </script>
 
 <template>
