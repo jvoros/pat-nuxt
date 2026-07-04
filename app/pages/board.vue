@@ -1,11 +1,12 @@
 <script setup lang="ts">
 const { session, clear: clearSession } = useUserSession();
 const slug = computed(() => session.value?.user?.slug);
-const { board, connected } = useSocket();
+const { board, connected } = useBoard();
 
 async function logout() {
     await $fetch("/api/auth/logout", { method: "POST" });
     await clearSession();
+    resetBoard();
     await navigateTo("/login");
 }
 </script>
