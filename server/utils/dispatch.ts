@@ -2,12 +2,10 @@ import Core from "../core/index";
 import { getSite, updateBoard, addUndo, clearUndos } from "../db/queries";
 import type { Board } from "../core/types";
 
-export type ActionMessage =
-  | { action: "signIn"; payload: Parameters<typeof Core.signIn>[1] }
-  | {
-      action: Exclude<keyof typeof Core, "build" | "signIn">;
-      payload?: unknown;
-    };
+export type ActionMessage = {
+  action: Exclude<keyof typeof Core, "build">;
+  payload?: unknown;
+};
 
 export type DispatchResult =
   | { ok: true; board: Board }
@@ -29,23 +27,6 @@ export const dispatch = async (
   const board: Board =
     site.board ?? Core.build({ slug, siteConfig: site.config });
 
-  if (action === "signIn") {
-    // siteConfig is only needed when the schedule has reset: true
-    const result = Core.signIn(board, {
-      ...payload,
-      siteConfig: payload.schedule.reset ? site.config : undefined,
-    });
-    if (result.error) return { ok: false, error: String(result.error) };
-
-    const undoId = await addUndo(result.oldboard);
-    const boardToSave = { ...result.board, undo: undoId };
-    await updateBoard(slug, boardToSave);
-
-    if (result.logs) await clearUndos(slug);
-
-    return { ok: true, board: boardToSave };
-  }
-
   const fn = Core[action] as (
     board: Board,
     payload: unknown,
@@ -61,6 +42,9 @@ export const dispatch = async (
   const undoId = await addUndo(result.oldboard);
   const boardToSave = { ...result.board, undo: undoId };
   await updateBoard(slug, boardToSave);
+
+  // Prune stale undo rows when the board resets (first sign-in of the day).
+  if (result.reset) await clearUndos(slug);
 
   return { ok: true, board: boardToSave };
 };

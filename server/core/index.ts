@@ -7,7 +7,6 @@ import type {
   Shift,
   Patient,
   BoardEvent,
-  LogItem,
   PatientModes,
 } from "./types.js";
 import BoardModule from "./board.js";
@@ -17,7 +16,7 @@ export type CoreResponse = {
   board: Board;
   oldboard: Board;
   error?: unknown;
-  logs?: LogItem[];
+  reset?: boolean;
 };
 
 type BoardFn<T> = (board: Board, params: T) => void;
@@ -41,14 +40,10 @@ const signInCheckReset = (
   params: {
     provider: Provider;
     schedule: ScheduleItem;
-    siteConfig?: SiteConfig;
   },
 ): CoreResponse => {
   if (params.schedule.reset) {
-    const logs = BoardModule.buildLogs(board.slug, board);
-    const resetBoard = BoardModule.reset(board, {
-      siteConfig: params.siteConfig,
-    });
+    const resetBoard = BoardModule.reset(board);
 
     // signIn withUndo() returns the signed-in board, but its 'oldboard' is just
     // the empty reset board — an intermediate state we don't want to expose.
@@ -58,7 +53,7 @@ const signInCheckReset = (
       params,
     );
 
-    return { board: signedInBoard!, oldboard: board, error, logs };
+    return { board: signedInBoard!, oldboard: board, error, reset: true };
   }
   return withUndo(BoardModule.signIn)(board, params);
 };
@@ -70,7 +65,6 @@ export type Core = {
     params: {
       provider: Provider;
       schedule: ScheduleItem;
-      siteConfig?: SiteConfig;
     },
   ) => CoreResponse;
   signOut: (board: Board, params: { shiftId: Shift["id"] }) => CoreResponse;

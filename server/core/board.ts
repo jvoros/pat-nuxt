@@ -12,6 +12,7 @@ import type {
   LogItem,
   ZonePointer,
   IndexZone,
+  ZoneMakeParams,
 } from "./types.js";
 
 const EVENT_LIMIT = 25;
@@ -48,11 +49,33 @@ const make = (params: { slug: string; siteConfig: SiteConfig }): Board => {
 
 // RESET
 
-const reset = (board: Board, params: { siteConfig?: SiteConfig }): Board => {
-  if (!params.siteConfig) throw Error("No siteConfig provided");
-  const { siteConfig } = params;
+const reset = (board: Board): Board => {
   const oldDate = board.date;
-  const newBoard = make({ slug: siteConfig.slug, siteConfig });
+
+  const newBoard: Board = {
+    slug: board.slug,
+    date: Date.now(),
+    zoneOrder: [...board.zoneOrder],
+    timeline: [],
+    zones: {},
+    shifts: {},
+    events: {},
+  };
+
+  // Rebuild each zone in its empty initial state from the existing zone definitions
+  board.zoneOrder.forEach((slug) => {
+    const zone = board.zones[slug]!;
+    const params: ZoneMakeParams = {
+      slug: zone.slug,
+      name: zone.name,
+      type: zone.type,
+      superZone: zone.superZone,
+      triggerSkip: zone.triggerSkip,
+      pitZone: zone.pitZone,
+    };
+    newBoard.zones[slug] = ZoneModule.make(params);
+  });
+
   // event
   const eventParams = {
     message: "Board reset",
