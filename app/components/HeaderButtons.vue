@@ -18,8 +18,7 @@ const hideSmall = "hidden md:flex";
             :class="hideSmall"
             title="logout"
             @click="logout"
-        >
-        </UButton>
+        />
     </UTooltip>
 
     <UTooltip text="Dark mode">

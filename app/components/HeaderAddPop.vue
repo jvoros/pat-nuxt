@@ -59,9 +59,8 @@ function clearSelections() {
                 leading-icon="lucide:stethoscope"
                 trailing-icon="octicon:triangle-down-16"
                 title="Add Clinician"
-            >
-                Add
-            </UButton>
+                label="Add"
+            />
         </UTooltip>
         <template #content>
             <div class="p-3 flex flex-col gap-2 w-60">
