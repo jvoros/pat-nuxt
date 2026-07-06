@@ -40,6 +40,10 @@ const selectedSchedule = computed<ScheduleItem | null>(() =>
         : null,
 );
 
+const isDisabled = computed<boolean>(
+    () => selectedProvider.value === null || selectedSchedule.value === null,
+);
+
 function clearSelections() {
     selectedProviderIndex.value = null;
     selectedScheduleIndex.value = null;
@@ -81,9 +85,7 @@ function clearSelections() {
                     color="neutral"
                     class="justify-center"
                     label="Add to Board"
-                    :disabled="
-                        selectedProvider === null || selectedSchedule === null
-                    "
+                    :disabled="isDisabled"
                 />
             </div>
         </template>
