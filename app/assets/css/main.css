@@ -1,2 +1,21 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+@layer base {
+    button:not(:disabled),
+    [role="button"]:not(:disabled) {
+        cursor: pointer;
+    }
+}
+
+/*
+this 'neutral' is nuxtui theme neutral, not tailwind 'neutral'
+set in 'app.config.ts'
+*/
+:root {
+    --ui-bg: var(--ui-color-neutral-50);
+}
+
+.dark {
+    --ui-bg: var(--ui-color-neutral-900);
+}
