@@ -52,13 +52,12 @@ function clearSelections() {
 
 <template>
     <UPopover @update:open="(open) => !open && clearSelections()">
-        <UTooltip text="Add clinician">
+        <UTooltip text="Add shift to board">
             <UButton
                 color="neutral"
                 size="lg"
                 leading-icon="lucide:stethoscope"
                 trailing-icon="octicon:triangle-down-16"
-                title="Add Clinician"
                 label="Add"
             />
         </UTooltip>
@@ -69,6 +68,7 @@ function clearSelections() {
                     :items="providerItems"
                     size="lg"
                     color="neutral"
+                    variant="outline"
                     placeholder="Select clinician"
                 />
                 <USelect
@@ -76,6 +76,7 @@ function clearSelections() {
                     :items="scheduleItems"
                     size="lg"
                     color="neutral"
+                    variant="outline"
                     placeholder="Select shift"
                 />
 

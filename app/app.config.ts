@@ -3,5 +3,10 @@ export default defineAppConfig({
     colors: {
       neutral: "gray",
     },
+    popover: {
+      slots: {
+        content: "bg-white",
+      },
+    },
   },
 });

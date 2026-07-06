@@ -16,7 +16,6 @@ const hideSmall = "hidden md:flex";
             size="lg"
             trailing-icon="lucide:log-out"
             :class="hideSmall"
-            title="logout"
             @click="logout"
         />
     </UTooltip>

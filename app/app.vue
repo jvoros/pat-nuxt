@@ -1,5 +1,5 @@
 <template>
-    <UApp :tooltip="{ delayDuration: 0 }">
+    <UApp>
         <NuxtRouteAnnouncer />
         <NuxtPage />
     </UApp>
