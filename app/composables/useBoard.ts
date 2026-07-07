@@ -23,8 +23,9 @@ export const useBoard = (): BoardState => {
 
   let ws: WebSocket | null = null;
 
-  // Holds the resolve/reject for the in-flight send. Only one action can be
-  // in flight at a time — the server processes actions serially.
+  // Holds the resolve/reject for the in-flight send.
+  // Resolves on the next message received — if a broadcast from another client
+  // arrives first, it settles early which is fine: the board is already updated.
   let pending: {
     resolve: (result: SendResult) => void;
     reject: (reason: unknown) => void;
@@ -41,6 +42,7 @@ export const useBoard = (): BoardState => {
     });
   };
 
+  // If Nuxt client-side
   if (import.meta.client) {
     const { session } = useUserSession();
     const slug = session.value?.user?.slug;

@@ -4,6 +4,9 @@ import type { Provider, ScheduleItem } from "../../server/core/types";
 
 const { config, send } = useBoard();
 
+const popoverOpen = ref(false);
+const loading = ref(false);
+
 // SelectItem list for USelect — label is the display name, value is the index
 // into config.providers, which is stable for the lifetime of the session.
 const providerItems = computed<SelectItem[]>(
@@ -44,9 +47,6 @@ const isDisabled = computed<boolean>(
     () => selectedProvider.value === null || selectedSchedule.value === null,
 );
 
-const popoverOpen = ref(false);
-const loading = ref(false);
-
 function clearSelections() {
     selectedProviderIndex.value = null;
     selectedScheduleIndex.value = null;
@@ -64,6 +64,7 @@ async function signIn() {
     });
     loading.value = false;
     popoverOpen.value = false;
+    clearSelections();
 }
 </script>
 
