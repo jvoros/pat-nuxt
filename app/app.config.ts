@@ -5,7 +5,7 @@ export default defineAppConfig({
     },
     popover: {
       slots: {
-        content: "bg-white",
+        content: "bg-white dark:bg-neutral-800",
       },
     },
   },
