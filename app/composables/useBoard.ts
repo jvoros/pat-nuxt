@@ -1,11 +1,13 @@
 import type { Board, SiteConfig } from "../../server/core/types";
 import type { ActionMessage } from "../../server/utils/dispatch";
 
+type SendResult = { ok: true; board: Board } | { ok: false; error: string };
+
 type BoardState = {
   board: Ref<Board | null>;
   config: Ref<SiteConfig | null>;
   connected: Ref<boolean>;
-  send: (action: ActionMessage) => void;
+  send: (action: ActionMessage) => Promise<SendResult>;
 };
 
 // Shared state — one connection per site session regardless of how many
@@ -21,10 +23,22 @@ export const useBoard = (): BoardState => {
 
   let ws: WebSocket | null = null;
 
-  const send = (action: ActionMessage) => {
-    if (ws?.readyState === WebSocket.OPEN) {
+  // Holds the resolve/reject for the in-flight send. Only one action can be
+  // in flight at a time — the server processes actions serially.
+  let pending: {
+    resolve: (result: SendResult) => void;
+    reject: (reason: unknown) => void;
+  } | null = null;
+
+  const send = (action: ActionMessage): Promise<SendResult> => {
+    return new Promise((resolve, reject) => {
+      if (ws?.readyState !== WebSocket.OPEN) {
+        reject(new Error("WebSocket is not connected"));
+        return;
+      }
+      pending = { resolve, reject };
       ws.send(JSON.stringify(action));
-    }
+    });
   };
 
   if (import.meta.client) {
@@ -47,18 +61,25 @@ export const useBoard = (): BoardState => {
 
       ws.addEventListener("close", () => {
         connected.value = false;
+        pending?.reject(new Error("WebSocket closed"));
+        pending = null;
       });
 
       ws.addEventListener("message", (event) => {
         try {
-          const msg = JSON.parse(event.data);
+          const msg = JSON.parse(event.data) as SendResult;
           if (msg.ok) {
             board.value = msg.board;
           } else {
             console.error("Board action error:", msg.error);
           }
+          pending?.resolve(msg);
         } catch {
-          console.error("Failed to parse board message", event.data);
+          const err = new Error("Failed to parse board message");
+          console.error(err, event.data);
+          pending?.reject(err);
+        } finally {
+          pending = null;
         }
       });
     }
