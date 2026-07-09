@@ -25,7 +25,7 @@ const getShiftStyles = (flags: ShiftFlags) => ({
         flags.isNext && "md:flex",
     ),
     menuBar: clsx(
-        "flex items-center justify-between uppercase text-xs font-medium py-1 px-2",
+        "hidden md:flex items-center justify-between uppercase text-xs font-medium py-1 px-2",
         flags.isNext
             ? "text-amber-500 bg-amber-100"
             : "text-dimmed md:text-muted md:bg-neutral-100 dark:md:bg-neutral-700",
@@ -49,12 +49,8 @@ const styles = computed(() =>
     <div v-if="shift" :class="styles?.card">
         <div v-if="flags?.isNext" :class="styles?.nextBanner">NEXT</div>
         <div :class="styles?.menuBar">
-            <div>
-                <span class="border-r-1 pr-3">{{ shift.name }}</span>
-                <span class="ml-2">
-                    {{ shift.assigned + shift.supervised }} Total •
-                    {{ shift.supervised }} Super
-                </span>
+            <div class="hidden md:flex">
+                <ShiftMeta :shift="shift" />
             </div>
             <div class="flex gap-3">
                 <UIcon
@@ -70,8 +66,13 @@ const styles = computed(() =>
             </div>
         </div>
         <div :class="styles?.content">
-            <div :class="styles?.providerName">
-                {{ shift.first }} {{ shift.last }}
+            <div>
+                <div class="md:hidden flex text-xs uppercase text-dimmed">
+                    <ShiftMeta :shift="shift" />
+                </div>
+                <div :class="styles?.providerName">
+                    {{ shift.first }} {{ shift.last }}
+                </div>
             </div>
 
             <div :class="styles?.buttons">
@@ -80,8 +81,10 @@ const styles = computed(() =>
                     :class="styles?.superBadge"
                     size="sm"
                     title="Supervisor"
-                    label="SUPER"
-                />
+                >
+                    <span class="flex md:hidden">S</span>
+                    <span class="hidden md:flex">SUPER</span>
+                </UBadge>
                 <UBadge
                     v-if="flags?.isPaused"
                     :class="styles?.pausedBadge"
@@ -106,9 +109,12 @@ const styles = computed(() =>
                     class="self-center"
                     color="neutral"
                     title="Assign Patient"
-                    label="Assign"
+                    leading-icon="fa7-solid:user-plus"
                     trailing-icon="fa7-solid:caret-down"
-                />
+                >
+                    <span class="flex md:hidden"></span>
+                    <span class="hidden md:flex">Assign</span>
+                </UButton>
             </div>
         </div>
     </div>
