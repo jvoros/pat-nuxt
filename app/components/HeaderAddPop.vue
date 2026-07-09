@@ -76,8 +76,8 @@ async function signIn() {
         <UButton
             color="neutral"
             size="lg"
-            leading-icon="lucide:stethoscope"
-            trailing-icon="octicon:triangle-down-16"
+            leading-icon="fa7-solid:stethoscope"
+            trailing-icon="fa7-solid:caret-down"
             label="Add"
         />
 

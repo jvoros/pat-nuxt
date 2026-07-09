@@ -10,17 +10,17 @@ const { board, config, connected } = useBoard();
         <UContainer>
             <div v-if="board" class="grid grid-cols-1 md:grid-cols-12 md:gap-8">
                 <section class="order-1 md:order-2 md:col-span-5">
-                    <SectionRotation :zone="board.zones.main" />
+                    <SectionRotation zoneSlug="main" />
                 </section>
-                <section class="order-2 md:order-3 md:col-span-3">
+                <section class="order-2 md:order-3 md:col-span-4">
                     <template v-for="zoneSlug in board.zoneOrder">
                         <SectionRotation
                             v-if="zoneSlug !== 'main'"
-                            :zone="board.zones[zoneSlug]"
+                            :zoneSlug="zoneSlug"
                         />
                     </template>
                 </section>
-                <section class="order-3 md:order-1 md:col-span-4">
+                <section class="order-3 md:order-1 md:col-span-3">
                     <SectionHeader title="Timeline" />
                     <div class="mb-4"></div>
                 </section>
@@ -41,10 +41,14 @@ const { board, config, connected } = useBoard();
     </UMain>
     <UFooter>
         <template #left>
-            <div><b>slug:</b> {{ slug }}</div>
+            <div>
+                <b>slug:</b>
+                {{ slug }}
+            </div>
 
             <div>
-                <b>websocket: </b> {{ connected ? "Live" : "Connecting…" }}
+                <b>websocket:</b>
+                {{ connected ? "Live" : "Connecting…" }}
             </div>
         </template>
     </UFooter>

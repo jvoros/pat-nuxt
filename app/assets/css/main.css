@@ -14,6 +14,7 @@ set in 'app.config.ts'
 */
 :root {
     --ui-bg: var(--ui-color-neutral-50);
+    --ui-container: 90rem;
 }
 
 .dark {

@@ -14,7 +14,7 @@ const hideSmall = "hidden md:flex";
             color="neutral"
             variant="outline"
             size="lg"
-            trailing-icon="lucide:log-out"
+            trailing-icon="fa7-solid:sign-out-alt"
             :class="hideSmall"
             @click="logout"
         />

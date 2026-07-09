@@ -9,7 +9,7 @@ defineEmits(["section-header-action"]);
 <template>
     <UTooltip text="click to collapse">
         <div
-            class="border-b-1 border-gray-200 flex justify-between items-center cursor-pointer"
+            class="mb-2 border-b-1 border-gray-200 flex justify-between items-center cursor-pointer"
         >
             <h3 class="font-bold md:text-lg uppercase tracking-wider">
                 {{ title }}
