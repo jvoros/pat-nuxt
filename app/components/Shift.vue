@@ -107,7 +107,6 @@ const styles = computed(() =>
                     color="neutral"
                     title="Assign Patient"
                     label="Assign"
-                    leading-icon="fa7-solid:user-plus"
                     trailing-icon="fa7-solid:caret-down"
                 />
             </div>

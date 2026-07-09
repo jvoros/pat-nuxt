@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { Zone } from "../../server/core/types";
 
-const { board } = useBoard();
+const { board, send } = useBoard();
 
 const props = defineProps<{
     zoneSlug: string;
 }>();
+
+const open = ref(true);
+const loading = ref(false);
 
 const zone = computed<Zone | undefined>(
     () => board.value?.zones[props.zoneSlug],
@@ -18,7 +21,25 @@ const flags = (shiftId: string) => {
     return getShiftFlags(shiftId, z, s);
 };
 
-const open = ref(true);
+const isRotation = computed<boolean>(() =>
+    ["rotation", "dual"].includes(zone.value.type),
+);
+const isSuperRot = computed<boolean>(() =>
+    ["dual", "super"].includes(zone.value.type),
+);
+
+async function adjustRotation(params: { which: string; offset: number }) {
+    loading.value = params.which + params.offset;
+    await send({
+        action: "adjustRotation",
+        payload: {
+            zoneSlug: zone.value.slug,
+            which: params.which,
+            offset: params.offset,
+        },
+    });
+    loading.value = false;
+}
 </script>
 
 <template>
@@ -28,6 +49,42 @@ const open = ref(true);
             <template v-for="shiftId in zone.shifts">
                 <Shift :shift-id="shiftId" :flags="flags(shiftId)" />
             </template>
+            <div v-if="isRotation" class="flex justify-between my-2">
+                <UButton
+                    color="neutral"
+                    variant="outline"
+                    leadingIcon="fa7-solid:angle-left"
+                    :loading="loading === 'next-1'"
+                    @click="adjustRotation({ which: 'next', offset: -1 })"
+                    label="Rotation"
+                />
+                <UButton
+                    color="neutral"
+                    variant="outline"
+                    trailingIcon="fa7-solid:angle-right"
+                    :loading="loading === 'next1'"
+                    @click="adjustRotation({ which: 'next', offset: 1 })"
+                    label="Rotation"
+                />
+            </div>
+            <div v-if="isSuperRot" class="flex justify-between">
+                <UButton
+                    color="neutral"
+                    variant="outline"
+                    leadingIcon="fa7-solid:angle-left"
+                    :loading="loading === 'super-1'"
+                    @click="adjustRotation({ which: 'super', offset: -1 })"
+                    label="Supervisor"
+                />
+                <UButton
+                    color="neutral"
+                    variant="outline"
+                    trailingIcon="fa7-solid:angle-right"
+                    :loading="loading === 'super1'"
+                    @click="adjustRotation({ which: 'super', offset: 1 })"
+                    label="Supervisor"
+                />
+            </div>
         </template>
     </UCollapsible>
 </template>
