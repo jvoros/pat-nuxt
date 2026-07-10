@@ -97,7 +97,7 @@ export type ScheduleItem = {
 
 // PATIENT
 
-export type PatientModes = "walkin" | "ambo" | "police" | "ft";
+export type PatientModes = "walkin" | "ambo" | "police" | "ft" | "heli";
 export type PatientCounts = "assigned" | "supervised" | "triaged";
 
 export type Patient = {

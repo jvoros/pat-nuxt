@@ -9,6 +9,8 @@ const props = defineProps<{
 
 const popoverOpen = ref(false);
 const loading = ref(false);
+const selectedMode = ref();
+const selectedRoom = ref();
 
 const modes = [
     { tool: "Walk In", slug: "walkin", icon: "user-plus" },
@@ -22,7 +24,14 @@ const isDisabled = computed<boolean>(
     () => selectedProvider.value === null || selectedSchedule.value === null,
 );
 
-function clearSelections() {}
+function setMode(modeSlug) {
+    selectedMode.value = modeSlug;
+}
+
+function clearSelections() {
+    selectedMode.value = null;
+    selectedRoom.value = null;
+}
 
 async function signIn() {
     if (!selectedProvider.value || !selectedSchedule.value) return;
@@ -63,7 +72,8 @@ async function signIn() {
         />
 
         <template #content>
-            <div class="flex flex-col items-center gap-2 p-3 w-60">
+            <div class="flex flex-col gap-2 p-3 w-60">
+                {{ selectedMode }} {{ selectedRoom }}
                 <div v-if="variant === 'shift'" class="w-full">
                     <UAlert
                         color="info"
@@ -72,7 +82,7 @@ async function signIn() {
                         description="Will not affect rotation"
                     />
                 </div>
-                <UFieldGroup class="w-full flex">
+                <UFieldGroup class="flex">
                     <UButton
                         v-for="mode in modes"
                         color="neutral"
@@ -81,17 +91,20 @@ async function signIn() {
                         :title="mode.tool"
                         class="grow flex justify-center"
                         :icon="`fa7-solid:${mode.icon}`"
+                        @click="setMode(mode.slug)"
                     />
                 </UFieldGroup>
                 <USelect
                     placeholder="Room"
-                    class="w-full"
+                    size="lg"
+                    v-model="selectedRoom"
                     :items="config.rooms"
                 />
                 <UButton
                     color="neutral"
                     label="Assign"
-                    class="w-full justify-center"
+                    size="lg"
+                    class="justify-center"
                 />
             </div>
         </template>
