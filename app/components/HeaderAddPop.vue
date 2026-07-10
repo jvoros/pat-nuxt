@@ -108,6 +108,14 @@ async function signIn() {
                     :loading="loading"
                     @click="signIn"
                 />
+                <div v-if="selectedSchedule?.reset === true">
+                    <UAlert
+                        color="warning"
+                        variant="subtle"
+                        icon="fa7-solid:warning"
+                        description="Adding this shift will reset the board."
+                    />
+                </div>
             </div>
         </template>
     </UPopover>
