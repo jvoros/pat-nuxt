@@ -47,7 +47,11 @@ async function adjustRotation(params: { which: string; offset: number }) {
         <SectionHeader :title="zone.name" icon="lucide:chevrons-up-down" />
         <template #content>
             <template v-for="shiftId in zone.shifts">
-                <Shift :shift-id="shiftId" :flags="flags(shiftId)" />
+                <Shift
+                    :shiftId="shiftId"
+                    :flags="flags(shiftId)"
+                    :zoneSlug="zone.slug"
+                />
             </template>
             <div v-if="isRotation" class="flex justify-between my-2">
                 <UButton
@@ -63,6 +67,7 @@ async function adjustRotation(params: { which: string; offset: number }) {
                     variant="outline"
                     trailingIcon="fa7-solid:angle-right"
                     :loading="loading === 'next1'"
+                    :trailing="true"
                     @click="adjustRotation({ which: 'next', offset: 1 })"
                     label="Rotation"
                 />
@@ -81,6 +86,7 @@ async function adjustRotation(params: { which: string; offset: number }) {
                     variant="outline"
                     trailingIcon="fa7-solid:angle-right"
                     :loading="loading === 'super1'"
+                    :trailing="true"
                     @click="adjustRotation({ which: 'super', offset: 1 })"
                     label="Supervisor"
                 />
