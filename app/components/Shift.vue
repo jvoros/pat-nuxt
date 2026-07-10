@@ -98,11 +98,8 @@ const items = computed<DropdownMenuItem[][]>(() => [
                 <ShiftMeta :shift="shift" />
             </div>
             <div class="flex gap-3">
-                <UIcon
-                    class="cursor-pointer size-5"
-                    name="fa7-solid:user-plus"
-                    title="Assign off rotation"
-                />
+                <AssignPop variant="shift" />
+
                 <ShiftMenu :shift="shift" :zoneSlug="zoneSlug" />
                 <!-- <UDropdownMenu :items="items">
                     <UIcon
@@ -158,17 +155,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
                     title="Bonus"
                     :label="`${shift.bonus - shift.assigned}`"
                 />
-                <UButton
-                    v-if="flags?.isNext"
-                    class="self-center"
-                    color="neutral"
-                    title="Assign Patient"
-                    leading-icon="fa7-solid:user-plus"
-                    trailing-icon="fa7-solid:caret-down"
-                >
-                    <span class="flex md:hidden"></span>
-                    <span class="hidden md:flex">Assign</span>
-                </UButton>
+                <AssignPop v-if="flags?.isNext" class="self-center" />
             </div>
         </div>
     </div>
