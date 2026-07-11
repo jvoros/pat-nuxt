@@ -4,13 +4,15 @@ import type { SelectItem } from "@nuxt/ui";
 const { config, send } = useBoard();
 
 const props = defineProps<{
-    variant: string;
+    shiftId: string;
+    variant?: string;
+    zoneSlug?: string;
 }>();
 
 const popoverOpen = ref(false);
 const loading = ref(false);
-const selectedMode = ref();
-const selectedRoom = ref();
+const selectedMode = ref(null);
+const selectedRoom = ref(null);
 
 const modes = [
     { tool: "Walk In", slug: "walkin", icon: "user-plus" },
@@ -21,7 +23,7 @@ const modes = [
 ];
 
 const isDisabled = computed<boolean>(
-    () => selectedProvider.value === null || selectedSchedule.value === null,
+    () => selectedMode.value === null || selectedRoom.value === null,
 );
 
 function setMode(modeSlug) {
@@ -33,16 +35,30 @@ function clearSelections() {
     selectedRoom.value = null;
 }
 
-async function signIn() {
-    if (!selectedProvider.value || !selectedSchedule.value) return;
+async function assign() {
+    if (isDisabled.value) return;
     loading.value = true;
-    await send({
-        action: "signIn",
-        payload: {
-            provider: selectedProvider.value,
-            schedule: selectedSchedule.value,
-        },
-    });
+
+    if (props.variant === "shift") {
+        await send({
+            action: "assignToShift",
+            payload: {
+                shiftId: props.shiftId,
+                zoneSlug: props.zoneSlug,
+                mode: selectedMode.value,
+                room: selectedRoom.value,
+            },
+        });
+    } else {
+        await send({
+            action: "assignToZone",
+            payload: {
+                zoneSlug: props.zoneSlug,
+                mode: selectedMode.value,
+                room: selectedRoom.value,
+            },
+        });
+    }
     loading.value = false;
     popoverOpen.value = false;
     clearSelections();
@@ -73,7 +89,6 @@ async function signIn() {
 
         <template #content>
             <div class="flex flex-col gap-2 p-3 w-60">
-                {{ selectedMode }} {{ selectedRoom }}
                 <div v-if="variant === 'shift'" class="w-full">
                     <UAlert
                         color="info"
@@ -86,7 +101,9 @@ async function signIn() {
                     <UButton
                         v-for="mode in modes"
                         color="neutral"
-                        variant="outline"
+                        :variant="
+                            selectedMode === mode.slug ? 'solid' : 'outline'
+                        "
                         size="lg"
                         :title="mode.tool"
                         class="grow flex justify-center"
@@ -105,6 +122,9 @@ async function signIn() {
                     label="Assign"
                     size="lg"
                     class="justify-center"
+                    :disabled="isDisabled"
+                    :loading="loading"
+                    @click="assign"
                 />
             </div>
         </template>

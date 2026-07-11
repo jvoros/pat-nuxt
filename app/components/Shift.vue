@@ -98,16 +98,12 @@ const items = computed<DropdownMenuItem[][]>(() => [
                 <ShiftMeta :shift="shift" />
             </div>
             <div class="flex gap-3">
-                <AssignPop variant="shift" />
-
+                <AssignPop
+                    variant="shift"
+                    :shiftId="shift.id"
+                    :zoneSlug="zoneSlug"
+                />
                 <ShiftMenu :shift="shift" :zoneSlug="zoneSlug" />
-                <!-- <UDropdownMenu :items="items">
-                    <UIcon
-                        class="cursor-pointer size-5"
-                        name="material-symbols:menu-rounded"
-                        title="Menu"
-                    />
-                </UDropdownMenu> -->
             </div>
         </div>
         <div :class="styles?.content">
@@ -155,7 +151,12 @@ const items = computed<DropdownMenuItem[][]>(() => [
                     title="Bonus"
                     :label="`${shift.bonus - shift.assigned}`"
                 />
-                <AssignPop v-if="flags?.isNext" class="self-center" />
+                <AssignPop
+                    v-if="flags?.isNext"
+                    class="self-center"
+                    shiftId="shiftId"
+                    :zoneSlug="zoneSlug"
+                />
             </div>
         </div>
     </div>
