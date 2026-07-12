@@ -49,53 +49,14 @@ const getShiftStyles = (flags: ShiftFlags) => ({
 const styles = computed(() =>
     props.flags ? getShiftStyles(props.flags) : null,
 );
-
-const items = computed<DropdownMenuItem[][]>(() => [
-    [{ label: "Shift Menu", type: "label" }],
-    [
-        {
-            label: "Pause Shift",
-            icon: "fa7-solid:circle-pause",
-            class: shift.value?.status === "paused" ? "hidden" : "",
-        },
-        {
-            label: "Unpause Shift",
-            icon: "fa7-solid:circle-play",
-            class: shift.value?.status !== "paused" ? "hidden" : "",
-        },
-    ],
-    [
-        {
-            label: "Switch to Zone",
-            icon: "fa7-solid:arrows-alt-h",
-            children: [[{ label: "Another Zone" }]],
-        },
-        {
-            label: "Also Join Zone",
-            icon: "fa7-solid:add",
-            children: [[{ label: "Another Zone" }]],
-        },
-        {
-            label: "Leave This Zone",
-            icon: "fa7-solid:arrow-up-right-from-square",
-        },
-    ],
-    [{ label: "Sign Out", icon: "fa7-solid:person-running" }],
-    [
-        {
-            label: "Delete Shift",
-            icon: "fa7-solid:trash",
-            color: "error",
-            class: shift.assigned + shift.supervised === 0 ? "hidden" : "",
-        },
-    ],
-]);
 </script>
 
 <template>
     <div v-if="shift" :class="styles?.card">
+        <!-- NEXT BANNER -->
         <div v-if="flags?.isNext" :class="styles?.nextBanner">NEXT</div>
 
+        <!-- MENU BAR -->
         <div :class="styles?.menuBar">
             <div class="hidden md:flex">
                 <ShiftMeta :shift="shift" />
