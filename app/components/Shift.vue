@@ -10,20 +10,9 @@ const props = defineProps<{
     zoneSlug: string | null;
 }>();
 
-const loading = ref(false);
-
 const shift = computed<Shift | undefined>(
     () => board.value?.shifts[props.shiftId],
 );
-
-async function triage() {
-    loading.value = true;
-    await send({
-        action: "addTriage",
-        payload: { shiftId: props.shiftId },
-    });
-    loading.value = false;
-}
 
 const useNextHighlight = props.flags.isNext & props.flags.isRotating;
 
@@ -106,6 +95,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
 <template>
     <div v-if="shift" :class="styles?.card">
         <div v-if="flags?.isNext" :class="styles?.nextBanner">NEXT</div>
+
         <div :class="styles?.menuBar">
             <div class="hidden md:flex">
                 <ShiftMeta :shift="shift" />
@@ -119,8 +109,12 @@ const items = computed<DropdownMenuItem[][]>(() => [
                 <ShiftMenu :shift="shift" :zoneSlug="zoneSlug" />
             </div>
         </div>
+
+        <!-- MAIN CONTENT -->
         <div :class="styles?.content">
+            <!-- LEFT SIDE W/NAME -->
             <div>
+                <!-- META INFO ONLY ON SMALL -->
                 <div class="md:hidden flex text-xs uppercase text-dimmed">
                     <ShiftMenu
                         :shift="shift"
@@ -130,12 +124,15 @@ const items = computed<DropdownMenuItem[][]>(() => [
 
                     <ShiftMeta :shift="shift" />
                 </div>
+                <!-- NAME -->
                 <div :class="styles?.providerName">
                     {{ shift.first }} {{ shift.last }}
                 </div>
             </div>
 
+            <!-- RIGHT SIDE WITH BUTTONS & BADGES -->
             <div :class="styles?.buttons">
+                <!-- BADGES -->
                 <UBadge
                     v-if="flags?.isSuper"
                     :class="styles?.superBadge"
@@ -164,17 +161,13 @@ const items = computed<DropdownMenuItem[][]>(() => [
                     title="Bonus"
                     :label="`${shift.bonus - shift.assigned}`"
                 />
-                <div class="flex gap-1">
-                    <UButton
-                        v-if="zoneSlug === 'ft'"
-                        color="neutral"
-                        icon="fa7-solid:notes-medical"
-                        class="md:self-end self-center"
-                        title="Triage Patient"
-                        :loading="loading"
-                        @click="triage"
-                    />
 
+                <!-- BUTTONS -->
+                <div class="flex gap-1">
+                    <ShiftTriageButton
+                        v-if="zoneSlug === 'ft'"
+                        :shiftId="shiftId"
+                    />
                     <AssignPop
                         v-if="flags?.isNext"
                         class="self-center"
