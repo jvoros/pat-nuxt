@@ -1,4 +1,4 @@
-import type { Board, SiteConfig } from "../../server/core/types";
+import type { Board, SiteConfig, Shift } from "../../server/core/types";
 import type { ActionMessage } from "../../server/utils/dispatch";
 
 type SendResult = { ok: true; board: Board } | { ok: false; error: string };
@@ -87,7 +87,33 @@ export const useBoard = (): BoardState => {
     }
   }
 
-  instance = { board, config, connected, send };
+  function getShiftName(id: Shift.id): string {
+    const shift = board.value?.shifts[id];
+    return `${shift.first} ${shift.last}`;
+  }
+
+  function getShiftsAlphabetically() {
+    const shifts = Object.keys(board.value?.shifts).map(
+      (shiftId) => board.value.shifts[shiftId],
+    );
+
+    const sortedShifts = shifts.sort((a, b) => {
+      if (a.last < b.last) return -1;
+      if (a.last > b.last) return 1;
+      return 0;
+    });
+
+    return sortedShifts.map((shift) => shift.id);
+  }
+
+  instance = {
+    board,
+    config,
+    connected,
+    send,
+    getShiftName,
+    getShiftsAlphabetically,
+  };
   return instance;
 };
 

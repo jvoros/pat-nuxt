@@ -2,11 +2,12 @@
 import { clsx } from "clsx";
 import type { Shift } from "../../server/core/types";
 import type { ShiftFlags } from "../utils/shiftFlags";
+import { modes } from "../utils/modes";
 
 const { board, send } = useBoard();
 const props = defineProps<{
     shiftId: string;
-    flags?: ShiftFlags | null;
+    flags: ShiftFlags | null;
     zoneSlug: string | null;
 }>();
 
@@ -14,22 +15,24 @@ const shift = computed<Shift | undefined>(
     () => board.value?.shifts[props.shiftId],
 );
 
-const useNextHighlight = props.flags.isNext & props.flags.isRotating;
+const useNextHighlight = computed(() => {
+    return props.flags.isNext & props.flags.isRotating;
+});
 
 const getShiftStyles = (flags: ShiftFlags) => ({
     card: clsx(
         "md:rounded md:mb-4 dark:bg-neutral-800 border",
-        useNextHighlight
+        useNextHighlight.value
             ? "border-2 border-amber-300 bg-yellow-50"
             : "bg-white border-neutral-300",
     ),
     nextBanner: clsx(
         "hidden bg-amber-300 text-xs justify-around font-bold text-white",
-        useNextHighlight && "md:flex",
+        useNextHighlight.value && "md:flex",
     ),
     menuBar: clsx(
         "hidden md:flex items-center justify-between uppercase text-xs font-medium py-1 px-2",
-        useNextHighlight
+        useNextHighlight.value
             ? "text-amber-500 bg-amber-100"
             : "text-dimmed md:text-muted md:bg-neutral-100 dark:md:bg-neutral-700",
     ),

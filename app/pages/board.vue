@@ -1,55 +1,47 @@
 <script setup lang="ts">
-const { session, logout } = useAuth();
-const slug = computed(() => session.value?.user?.slug);
-const { board, config, connected } = useBoard();
+const { logout } = useAuth();
+const { board, config } = useBoard();
 </script>
 
 <template>
     <AppHeader />
     <UMain>
         <UContainer>
-            <div v-if="board" class="grid grid-cols-1 md:grid-cols-12 md:gap-8">
-                <section class="order-1 md:order-2 md:col-span-5">
-                    <SectionRotation zoneSlug="main" />
+            <main
+                v-if="board"
+                class="grid grid-cols-1 md:grid-cols-11 md:gap-8"
+            >
+                <section class="order-1 md:order-2 md:col-span-4">
+                    <SectionRotation :zoneSlug="board.zoneOrder[0]" />
                 </section>
                 <section class="order-2 md:order-3 md:col-span-4">
-                    <template v-for="zoneSlug in board.zoneOrder">
-                        <SectionRotation
-                            v-if="zoneSlug !== 'main'"
-                            :zoneSlug="zoneSlug"
-                        />
-                    </template>
+                    <SectionRotation
+                        v-for="zoneSlug in board.zoneOrder.slice(1)"
+                        :zoneSlug="zoneSlug"
+                    />
                 </section>
-                <section class="order-3 md:order-1 md:col-span-3">
-                    <SectionHeader title="Timeline" />
-                    <div class="mb-4"></div>
+                <section class="order-3 md:order-1 md:col-span-3 h-full">
+                    <Timeline :timeline="board?.timeline" />
                 </section>
-            </div>
-        </UContainer>
-        <UCollapsible>
-            <UButton variant="subtle">Config JSON</UButton>
-            <template #content>
-                <pre>{{ config }}</pre>
-            </template>
-        </UCollapsible>
-        <UCollapsible>
-            <UButton variant="subtle">Board JSON</UButton>
-            <template #content>
-                <pre>{{ board }}</pre>
-            </template>
-        </UCollapsible>
-    </UMain>
-    <UFooter>
-        <template #left>
-            <div>
-                <b>slug:</b>
-                {{ slug }}
-            </div>
+            </main>
 
-            <div>
-                <b>websocket:</b>
-                {{ connected ? "Live" : "Connecting…" }}
-            </div>
-        </template>
-    </UFooter>
+            <UCollapsible>
+                <UButton color="neutral" variant="subtle">
+                    Show Config & State JSON
+                </UButton>
+                <template #content>
+                    <div class="flex flex-row gap-8">
+                        <div>
+                            CONFIG:
+                            <pre>{{ config }}</pre>
+                        </div>
+                        <div>
+                            BOARD:
+                            <pre>{{ board }}</pre>
+                        </div>
+                    </div>
+                </template>
+            </UCollapsible>
+        </UContainer>
+    </UMain>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SelectItem } from "@nuxt/ui";
+import { modes } from "../utils/modes";
 
 const { config, send } = useBoard();
 
@@ -11,16 +12,9 @@ const props = defineProps<{
 
 const popoverOpen = ref(false);
 const loading = ref(false);
+
 const selectedMode = ref(null);
 const selectedRoom = ref(null);
-
-const modes = [
-    { tool: "Walk In", slug: "walkin", icon: "user-plus" },
-    { tool: "Fast Track", slug: "ft", icon: "bolt-lightning" },
-    { tool: "Ambo", slug: "ambo", icon: "truck-medical" },
-    { tool: "Police", slug: "police", icon: "shield" },
-    { tool: "Helicopter", slug: "heli", icon: "helicopter" },
-];
 
 const isDisabled = computed<boolean>(
     () => selectedMode.value === null || selectedRoom.value === null,
@@ -37,28 +31,19 @@ function clearSelections() {
 
 async function assign() {
     if (isDisabled.value) return;
+    const action = props.variant === "shift" ? "assignToShift" : "assignToZone";
     loading.value = true;
 
-    if (props.variant === "shift") {
-        await send({
-            action: "assignToShift",
-            payload: {
-                shiftId: props.shiftId,
-                zoneSlug: props.zoneSlug,
-                mode: selectedMode.value,
-                room: selectedRoom.value,
-            },
-        });
-    } else {
-        await send({
-            action: "assignToZone",
-            payload: {
-                zoneSlug: props.zoneSlug,
-                mode: selectedMode.value,
-                room: selectedRoom.value,
-            },
-        });
-    }
+    await send({
+        action,
+        payload: {
+            shiftId: props.shiftId,
+            zoneSlug: props.zoneSlug,
+            mode: selectedMode.value,
+            room: selectedRoom.value,
+        },
+    });
+
     loading.value = false;
     popoverOpen.value = false;
     clearSelections();
@@ -107,7 +92,7 @@ async function assign() {
                         size="lg"
                         :title="mode.tool"
                         class="grow flex justify-center"
-                        :icon="`fa7-solid:${mode.icon}`"
+                        :icon="mode.icon"
                         @click="setMode(mode.slug)"
                     />
                 </UFieldGroup>
