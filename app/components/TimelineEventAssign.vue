@@ -18,18 +18,19 @@ const styles = {
             <div class="font-mono text-dimmed text-xs">
                 {{ convertTime(event.time) }}
             </div>
-            <div class="text-lg md:text-lg font-bold group cursor-pointer">
-                {{ getShiftName(event.assign) }}
-                <UIcon
-                    name="fa7-solid:caret-down"
-                    class="invisible group-hover:visible"
-                />
-                <div
-                    v-if="event.super"
-                    class="text-xs font-normal font-mono text-dimmed"
-                >
-                    Super: {{ getShiftName(event.super) }}
+            <div>
+                <div class="text-lg md:text-lg font-bold group cursor-pointer">
+                    {{ getShiftName(event.assign) }}
+                    <UIcon
+                        name="fa7-solid:caret-down"
+                        class="invisible group-hover:visible"
+                    />
                 </div>
+                <template v-if="event.super">
+                    <div class="text-xs font-normal font-mono text-dimmed">
+                        Super: {{ getShiftName(event.super) }}
+                    </div>
+                </template>
             </div>
         </div>
         <div class="text-lg font-bold group cursor-pointer">

@@ -8,7 +8,7 @@ const props = defineProps<{
 }>();
 
 const loading = ref(false);
-const filteredShiftId = ref("35a16745");
+const filteredShiftId = ref("");
 
 function setFilter(id: string) {
     filteredShiftId.value = id;
