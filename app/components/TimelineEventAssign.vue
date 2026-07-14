@@ -38,7 +38,7 @@ const styles = {
                 </div>
             </div>
         </div>
-        <div class="text-lg font-bold group cursor-pointer">
+        <div class="text-lg font-bold">
             <div class="text-lg md:text-lg font-bold pr-2">
                 {{ event.room }}
             </div>

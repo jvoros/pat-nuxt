@@ -78,43 +78,47 @@ async function signIn() {
             size="lg"
             leading-icon="fa7-solid:stethoscope"
             trailing-icon="fa7-solid:caret-down"
-            label="Add"
+            label="Sign In"
         />
 
         <template #content>
-            <div class="p-3 flex flex-col gap-2 w-60">
-                <USelect
-                    v-model="selectedProviderIndex"
-                    :items="providerItems"
-                    size="lg"
-                    color="neutral"
-                    variant="outline"
-                    placeholder="Select clinician"
-                />
-                <USelect
-                    v-model="selectedScheduleIndex"
-                    :items="scheduleItems"
-                    size="lg"
-                    color="neutral"
-                    variant="outline"
-                    placeholder="Select shift"
-                />
-                <UButton
-                    size="lg"
-                    color="neutral"
-                    class="justify-center"
-                    label="Add to Board"
-                    :disabled="isDisabled"
-                    :loading="loading"
-                    @click="signIn"
-                />
-                <div v-if="selectedSchedule?.reset === true">
-                    <UAlert
-                        color="warning"
-                        variant="subtle"
-                        icon="fa7-solid:warning"
-                        description="Adding this shift will reset the board."
+            <div class="w-60">
+                <div class="p-2 font-bold text-sm">Sign In to Board</div>
+                <USeparator />
+                <div class="p-3 flex flex-col gap-2">
+                    <USelect
+                        v-model="selectedProviderIndex"
+                        :items="providerItems"
+                        size="lg"
+                        color="neutral"
+                        variant="outline"
+                        placeholder="Select clinician"
                     />
+                    <USelect
+                        v-model="selectedScheduleIndex"
+                        :items="scheduleItems"
+                        size="lg"
+                        color="neutral"
+                        variant="outline"
+                        placeholder="Select shift"
+                    />
+                    <UButton
+                        size="lg"
+                        color="neutral"
+                        class="justify-center"
+                        label="Add to Board"
+                        :disabled="isDisabled"
+                        :loading="loading"
+                        @click="signIn"
+                    />
+                    <div v-if="selectedSchedule?.reset === true">
+                        <UAlert
+                            color="warning"
+                            variant="subtle"
+                            icon="fa7-solid:warning"
+                            description="Adding this shift will reset the board."
+                        />
+                    </div>
                 </div>
             </div>
         </template>

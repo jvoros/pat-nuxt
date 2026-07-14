@@ -3,9 +3,14 @@ const { logout } = useAuth();
 const hideSmall = "hidden md:flex";
 </script>
 <template>
-    <UButton color="neutral" size="lg" variant="ghost" :class="hideSmall">
-        Quick Reference
-    </UButton>
+    <UButton
+        color="neutral"
+        size="lg"
+        variant="soft"
+        label="Quick Reference"
+        icon="fa7-solid:bookmark"
+        :class="hideSmall"
+    />
 
     <HeaderAddPop />
 

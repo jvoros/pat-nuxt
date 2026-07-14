@@ -130,12 +130,16 @@ function clearSelected() {
                             class="w-full text-dimmed"
                         />
                         <template #content>
-                            <USeparator class="mt-2" />
-                            <UTextarea v-model="event.note" class="m-2" />
+                            <UTextarea
+                                v-model="event.note"
+                                color="neutral"
+                                class="m-2"
+                            />
                             <UButton
                                 color="neutral"
-                                icon="fa7-solid:save"
-                                label="Save"
+                                variant="outline"
+                                icon="fa7-solid:circle-check"
+                                label="Update"
                                 class="ml-2"
                                 :loading="loading === 'updateNote'"
                                 @click="updateNote"

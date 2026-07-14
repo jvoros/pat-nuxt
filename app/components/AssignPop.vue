@@ -73,44 +73,50 @@ async function assign() {
         />
 
         <template #content>
-            <div class="flex flex-col gap-2 p-3 w-60">
-                <div v-if="variant === 'shift'" class="w-full">
-                    <UAlert
-                        color="info"
-                        variant="subtle"
-                        title="Assign Off Rotation"
-                        description="Will not affect rotation"
+            <div class="w-60">
+                <div class="font-bold text-sm p-2">
+                    <span v-if="variant === 'shift'">Assign Off Rotation</span>
+                    <span v-else>Assign Patient</span>
+                </div>
+                <USeparator />
+                <div class="flex flex-col gap-2 p-3">
+                    <div v-if="variant === 'shift'" class="w-full">
+                        <UAlert
+                            color="warning"
+                            variant="subtle"
+                            description="Will not affect rotation"
+                        />
+                    </div>
+                    <UFieldGroup class="flex">
+                        <UButton
+                            v-for="mode in modes"
+                            color="neutral"
+                            :variant="
+                                selectedMode === mode.slug ? 'solid' : 'outline'
+                            "
+                            size="lg"
+                            :title="mode.tool"
+                            class="grow flex justify-center"
+                            :icon="mode.icon"
+                            @click="setMode(mode.slug)"
+                        />
+                    </UFieldGroup>
+                    <USelect
+                        placeholder="Room"
+                        size="lg"
+                        v-model="selectedRoom"
+                        :items="config.rooms"
+                    />
+                    <UButton
+                        color="neutral"
+                        label="Assign"
+                        size="lg"
+                        class="justify-center"
+                        :disabled="isDisabled"
+                        :loading="loading"
+                        @click="assign"
                     />
                 </div>
-                <UFieldGroup class="flex">
-                    <UButton
-                        v-for="mode in modes"
-                        color="neutral"
-                        :variant="
-                            selectedMode === mode.slug ? 'solid' : 'outline'
-                        "
-                        size="lg"
-                        :title="mode.tool"
-                        class="grow flex justify-center"
-                        :icon="mode.icon"
-                        @click="setMode(mode.slug)"
-                    />
-                </UFieldGroup>
-                <USelect
-                    placeholder="Room"
-                    size="lg"
-                    v-model="selectedRoom"
-                    :items="config.rooms"
-                />
-                <UButton
-                    color="neutral"
-                    label="Assign"
-                    size="lg"
-                    class="justify-center"
-                    :disabled="isDisabled"
-                    :loading="loading"
-                    @click="assign"
-                />
             </div>
         </template>
     </UPopover>
