@@ -15,30 +15,33 @@ const styles = {
 <template>
     <div :class="styles.assign">
         <div :class="styles.left">
-            <div class="font-mono text-dimmed text-xs">
-                {{ convertTime(event.time) }}
-            </div>
+            <TimelinePop :event="event" />
             <div>
-                <div class="text-lg md:text-lg font-bold group cursor-pointer">
+                <div class="text-lg md:text-lg font-bold">
                     {{ getShiftName(event.assign) }}
-                    <UIcon
-                        name="fa7-solid:caret-down"
-                        class="invisible group-hover:visible"
-                    />
                 </div>
-                <template v-if="event.super">
-                    <div class="text-xs font-normal font-mono text-dimmed">
-                        Super: {{ getShiftName(event.super) }}
+                <div class="text-xs font-normal font-mono text-dimmed">
+                    <div v-if="event.super">
+                        <UBadge
+                            color="neutral"
+                            variant="soft"
+                            label="S"
+                            size="sm"
+                            class="mr-1"
+                        />
+                        <span>{{ getShiftName(event.super) }}</span>
                     </div>
-                </template>
+                    <div v-if="event.note">
+                        <UIcon name="fa7-solid:asterisk" class="mr-1" />
+                        <span>{{ event.note }}</span>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="text-lg font-bold group cursor-pointer">
-            {{ event.room }}
-            <UIcon
-                name="fa7-solid:caret-down"
-                class="invisible group-hover:visible"
-            />
+            <div class="text-lg md:text-lg font-bold pr-2">
+                {{ event.room }}
+            </div>
         </div>
     </div>
 </template>

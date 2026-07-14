@@ -112,6 +112,10 @@ export type Core = {
     board: Board,
     params: { eventId: BoardEvent["id"]; newRoom: string },
   ) => CoreResponse;
+  updateNote: (
+    board: Board,
+    params: { eventId: BoardEvent["id"]; note: string },
+  ) => CoreResponse;
 };
 
 const Core: Core = {
@@ -129,6 +133,7 @@ const Core: Core = {
   assignToZone: withUndo(Assign.toZone),
   reassign: withUndo(Assign.reassign),
   changeRoom: withUndo(Assign.changeRoom),
+  updateNote: withUndo(Assign.updateNote),
 };
 
 export default Core;

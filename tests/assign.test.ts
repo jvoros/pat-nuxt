@@ -244,7 +244,7 @@ describe("Assign Controller", () => {
   });
 
   describe("Change Room", () => {
-    it("should update the room field on the original event without creating a new event", () => {
+    it("should update the room field on the original event", () => {
       const board = makeBoard();
       AssignModule.toShift(board, {
         shiftId: board.zones.main.shifts[0],
@@ -256,7 +256,24 @@ describe("Assign Controller", () => {
       const timelineLengthBefore = board.timeline.length;
       AssignModule.changeRoom(board, { eventId, newRoom: "10" });
       expect(board.events[eventId].room).toEqual("10");
-      expect(board.timeline.length).toEqual(timelineLengthBefore); // no new event
+      expect(board.timeline.length).toEqual(timelineLengthBefore + 1); // no new event
+    });
+  });
+
+  describe("Update Note", () => {
+    it("should update the note field on events", () => {
+      const board = makeBoard();
+      AssignModule.toShift(board, {
+        shiftId: board.zones.main.shifts[0],
+        zoneSlug: "main",
+        mode: "walkin",
+        room: "5",
+      });
+      const timelineLengthBefore = board.timeline.length;
+      const eventId = board.timeline[0];
+      AssignModule.updateNote(board, { eventId, note: "new note" });
+      expect(board.events[eventId].note).toEqual("new note");
+      expect(board.timeline.length).toEqual(timelineLengthBefore + 1);
     });
   });
 });

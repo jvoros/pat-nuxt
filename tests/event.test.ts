@@ -19,4 +19,8 @@ describe("Event Controller", () => {
     Event.changeRoom({ event: ev, newRoom: "new room" });
     expect(ev.room).toEqual("new room");
   });
+  it("should update note", () => {
+    Event.updateNote({ event: ev, note: "new note" });
+    expect(ev.note).toEqual("new note");
+  });
 });

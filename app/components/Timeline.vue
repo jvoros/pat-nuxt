@@ -8,8 +8,8 @@ const props = defineProps<{
 }>();
 
 const loading = ref(false);
-const filteredShiftId = ref("");
 
+const filteredShiftId = ref("");
 function setFilter(id: string) {
     filteredShiftId.value = id;
 }
@@ -42,6 +42,12 @@ async function undo() {
             />
         </template>
     </SectionHeader>
+    <UAlert
+        color="neutral"
+        variant="subtle"
+        description="Click on time to adjust assignment or edit note."
+        class="hidden md:flex mb-2"
+    />
     <div class="my-2 md:my-4 border-l border-muted ml-4">
         <template v-for="(event, index) in filteredTimeline">
             <TimelineEvent :eventId="event" :index="index" />

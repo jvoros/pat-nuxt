@@ -174,6 +174,28 @@ const changeRoom = (
   const event = board.events[eventId];
   if (!event) throw Error(`No event found for id: ${eventId}`);
   EventModule.changeRoom({ event, newRoom });
+
+  // event
+  const eventParams = {
+    message: `Changed room on event [${eventId}].`,
+  };
+  BoardModule.addEvent(board, eventParams);
+};
+
+const updateNote = (
+  board: Board,
+  params: { eventId: BoardEvent["id"]; note: string },
+): void => {
+  const { eventId, note } = params;
+  const event = board.events[eventId];
+  if (!event) throw Error(`No event found for id: ${eventId}`);
+  EventModule.updateNote({ event, note });
+
+  // event
+  const eventParams = {
+    message: `Add/Edit note on event [${eventId}].`,
+  };
+  BoardModule.addEvent(board, eventParams);
 };
 
 export default {
@@ -181,4 +203,5 @@ export default {
   toZone,
   reassign,
   changeRoom,
+  updateNote,
 };
