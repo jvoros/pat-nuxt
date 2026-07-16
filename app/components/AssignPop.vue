@@ -55,22 +55,7 @@ async function assign() {
         v-model:open="popoverOpen"
         @update:open="(open) => !open && clearSelections()"
     >
-        <UButton
-            v-if="variant !== 'shift'"
-            color="neutral"
-            title="Assign Patient"
-            leading-icon="fa7-solid:user-plus"
-            trailing-icon="fa7-solid:caret-down"
-        >
-            <span class="flex md:hidden"></span>
-            <span class="hidden md:flex">Assign</span>
-        </UButton>
-        <UIcon
-            v-if="variant === 'shift'"
-            class="cursor-pointer size-5"
-            name="fa7-solid:user-plus"
-            title="Assign off rotation"
-        />
+        <slot />
 
         <template #content>
             <div class="w-60">

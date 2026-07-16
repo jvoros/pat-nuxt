@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { BoardEvent } from "../../server/core/types";
+import type { BoardEvent, Shift } from "../../server/core/types";
 
-const { board, send, getShiftsAlphabetically } = useBoard();
+const { board, send, getShiftName, getShiftsAlphabetically } = useBoard();
 
 const props = defineProps<{
     timeline: BoardEvent.id[];
@@ -10,8 +10,8 @@ const props = defineProps<{
 const loading = ref(false);
 
 const filteredShiftId = ref("");
-function setFilter(id: string) {
-    filteredShiftId.value = id;
+function setFilter(shiftId: shiftId) {
+    filteredShiftId.value = shiftId;
 }
 
 const filteredTimeline = computed(() => {
@@ -35,12 +35,10 @@ async function undo() {
 </script>
 <template>
     <SectionHeader title="Timeline">
-        <template #right>
-            <TimelineFilter
-                :setFilter="setFilter"
-                :filteredId="filteredShiftId"
-            />
-        </template>
+        <TimelineFilter
+            @set-filter="setFilter"
+            :filtered="filteredShiftId ? getShiftName(filteredShiftId) : ''"
+        />
     </SectionHeader>
     <UAlert
         color="neutral"
@@ -52,7 +50,7 @@ async function undo() {
         <template v-for="(event, index) in filteredTimeline">
             <TimelineEvent :eventId="event" :index="index" />
             <template v-if="index === 0">
-                <div class="flex justify-end md:-mt-2 pb-1 md:pb-4">
+                <div class="flex justify-end md:-mt-2 pb-1 md:mb-4">
                     <UButton
                         color="neutral"
                         variant="outline"

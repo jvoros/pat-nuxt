@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import type { Shift } from "../../server/core/types";
 const { board, getShiftName, getShiftsAlphabetically } = useBoard();
 const props = defineProps<{
-    setFilter?: fn;
-    filteredId?: string;
+    filtered?: string;
 }>();
+
+const emit = defineEmits(["set-filter"]);
 
 const providersMenu = [
     [{ label: "Show Only:", type: "label" }],
     getShiftsAlphabetically().map((shiftId) => ({
         label: getShiftName(shiftId),
-        onSelect: () => props.setFilter(shiftId),
+        onSelect: () => handleClick(shiftId),
     })),
 ];
 
@@ -19,22 +21,26 @@ const clearMenu = [
             label: "Clear Filter",
             icon: "fa7-solid:close",
             onSelect: () => {
-                props.setFilter("");
+                handleClick("");
             },
         },
     ],
 ];
 
 const menuItems = computed(() => {
-    return props.filteredId === "" ? providersMenu : clearMenu;
+    return props.filtered === "" ? providersMenu : clearMenu;
 });
+
+function handleClick(shiftId: Shift.id) {
+    emit("set-filter", shiftId);
+}
 </script>
 <template>
     <UDropdownMenu :items="menuItems">
         <UBadge
             color="neutral"
-            variant="soft"
-            :label="filteredId ? getShiftName(filteredId) : 'filter'"
+            :variant="filtered ? 'solid' : 'soft'"
+            :label="filtered ? filtered : 'filter'"
             trailing-icon="mingcute:filter-2-fill"
             class="uppercase text-xs mb-1 cursor-pointer"
         />

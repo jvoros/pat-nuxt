@@ -9,15 +9,18 @@ const props = defineProps<{
 }>();
 
 const open = ref(true);
+const loading = ref(false);
+
 const collapseIcon = computed(() => {
     return open.value ? "lucide:chevrons-down-up" : "lucide:chevrons-up-down";
 });
-const loading = ref(false);
 
 const zone = computed<Zone | undefined>(
     () => board.value?.zones[props.zoneSlug],
 );
 
+// shift flags depend on shift and zone
+// so they belong to zone, pass to shift
 const flags = (shiftId: string) => {
     const z = zone.value;
     const s = board.value?.shifts[shiftId];
@@ -51,20 +54,20 @@ async function adjustRotation(params: { which: string; offset: number }) {
         v-if="zone"
         v-model:open="open"
         class="mb-2 md:mb-9"
-        :class="zone.slug === 'off' ? 'hidden md:inline' : ''"
+        :class="zone.slug === 'off' && 'hidden md:inline'"
     >
+        <!-- HEADER -->
         <SectionHeader :title="zone.name">
-            <template #right>
-                <UBadge
-                    :icon="collapseIcon"
-                    color="neutral"
-                    :variant="open ? 'soft' : 'solid'"
-                    class="uppercase text-xs mb-1"
-                />
-            </template>
+            <UBadge
+                :icon="collapseIcon"
+                color="neutral"
+                :variant="open ? 'soft' : 'solid'"
+            />
         </SectionHeader>
 
+        <!-- COLLAPSIBLE -->
         <template #content>
+            <!-- SHIFTS -->
             <template v-if="zone.shifts.length === 0">
                 <UEmpty description="No shifts on rotation yet." />
             </template>

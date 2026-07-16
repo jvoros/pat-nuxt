@@ -116,7 +116,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
     [
         {
             label: "Sign Out",
-            icon: "fa7-solid:person-running",
+            icon: "fa7-solid:hand-peace",
             class: props.zoneSlug === "off" && "hidden",
             onSelect: () =>
                 dispatch({

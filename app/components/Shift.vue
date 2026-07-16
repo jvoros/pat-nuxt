@@ -31,7 +31,7 @@ const getShiftStyles = (flags: ShiftFlags) => ({
         useNextHighlight.value && "md:flex",
     ),
     menuBar: clsx(
-        "hidden md:flex items-center justify-between uppercase text-xs font-medium py-1 px-2",
+        "first:rounded-t hidden md:flex items-center justify-between uppercase text-xs font-medium py-1 px-2",
         useNextHighlight.value
             ? "text-amber-500 bg-amber-100"
             : "text-dimmed md:text-muted md:bg-neutral-100 dark:md:bg-neutral-700",
@@ -69,7 +69,13 @@ const styles = computed(() =>
                     variant="shift"
                     :shiftId="shift.id"
                     :zoneSlug="zoneSlug"
-                />
+                >
+                    <UIcon
+                        class="cursor-pointer size-5"
+                        name="fa7-solid:user-plus"
+                        title="Assign off rotation"
+                    />
+                </AssignPop>
                 <ShiftMenu :shift="shift" :zoneSlug="zoneSlug" />
             </div>
         </div>
@@ -137,7 +143,17 @@ const styles = computed(() =>
                         class="self-center"
                         shiftId="shiftId"
                         :zoneSlug="zoneSlug"
-                    />
+                    >
+                        <UButton
+                            v-if="variant !== 'shift'"
+                            color="neutral"
+                            title="Assign Patient"
+                            leading-icon="fa7-solid:user-plus"
+                            trailing-icon="fa7-solid:caret-down"
+                        >
+                            <span class="hidden md:flex">Assign</span>
+                        </UButton>
+                    </AssignPop>
                 </div>
             </div>
         </div>

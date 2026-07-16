@@ -4,10 +4,13 @@ defineProps<{
 }>();
 </script>
 <template>
-    <div class="mb-2 border-b-1 border-muted flex justify-between items-center">
+    <div
+        class="mb-2 border-b-1 border-muted flex justify-between items-center pb-1"
+    >
         <h3 class="font-bold md:text-lg uppercase tracking-wider">
             {{ title }}
         </h3>
-        <slot name="right"></slot>
+        <!-- slot for buttons -->
+        <slot></slot>
     </div>
 </template>

@@ -4,11 +4,8 @@ import type { Provider, ScheduleItem } from "../../server/core/types";
 
 const { config, send } = useBoard();
 
-const popoverOpen = ref(false);
-const loading = ref(false);
-
-// SelectItem list for USelect — label is the display name, value is the index
-// into config.providers, which is stable for the lifetime of the session.
+// PROVIDER
+// use add index to items
 const providerItems = computed<SelectItem[]>(
     () =>
         config.value?.providers.map((p, i) => ({
@@ -16,17 +13,17 @@ const providerItems = computed<SelectItem[]>(
             value: i,
         })) ?? [],
 );
-
+// model value based on index
 const selectedProviderIndex = ref<number | null>(null);
-
+// use index to get provider
 const selectedProvider = computed<Provider | null>(() =>
     selectedProviderIndex.value !== null
         ? (config.value?.providers[selectedProviderIndex.value] ?? null)
         : null,
 );
 
-// SelectItem list for USelect — label is the schedule name, value is the index
-// into config.schedule, which is stable for the lifetime of the session.
+// SCHEDULE
+// add index
 const scheduleItems = computed<SelectItem[]>(
     () =>
         config.value?.schedule.map((s, i) => ({
@@ -34,15 +31,18 @@ const scheduleItems = computed<SelectItem[]>(
             value: i,
         })) ?? [],
 );
-
+// model index in select box
 const selectedScheduleIndex = ref<number | null>(null);
-
+// use index to get schedule
 const selectedSchedule = computed<ScheduleItem | null>(() =>
     selectedScheduleIndex.value !== null
         ? (config.value?.schedule[selectedScheduleIndex.value] ?? null)
         : null,
 );
 
+// FORM STATE
+const popoverOpen = ref(false);
+const loading = ref(false);
 const isDisabled = computed<boolean>(
     () => selectedProvider.value === null || selectedSchedule.value === null,
 );
