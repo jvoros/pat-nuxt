@@ -16,7 +16,7 @@ const shift = computed<Shift | undefined>(
 );
 
 const useNextHighlight = computed(() => {
-    return props.flags.isNext & props.flags.isRotating;
+    return props.flags?.isNext && props.flags?.isRotating;
 });
 
 const getShiftStyles = (flags: ShiftFlags) => ({
@@ -141,11 +141,10 @@ const styles = computed(() =>
                     <AssignPop
                         v-if="flags?.isNext"
                         class="self-center"
-                        shiftId="shiftId"
+                        :shiftId="shiftId"
                         :zoneSlug="zoneSlug"
                     >
                         <UButton
-                            v-if="variant !== 'shift'"
                             color="neutral"
                             title="Assign Patient"
                             leading-icon="fa7-solid:user-plus"

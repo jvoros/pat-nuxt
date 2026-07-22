@@ -1,5 +1,11 @@
 import Core from "../core/index";
-import { getSite, updateBoard, addUndo, clearUndos } from "../db/queries";
+import {
+  getSite,
+  updateBoard,
+  addUndo,
+  getUndo,
+  clearUndos,
+} from "../db/queries";
 import type { Board } from "../core/types";
 
 export type ActionMessage = {
@@ -66,7 +72,6 @@ export const dispatchUndo = async (slug: string): Promise<DispatchResult> => {
   const { board } = site;
   if (!board.undo) return { ok: false, error: "Nothing to undo" };
 
-  const { getUndo } = await import("../db/queries");
   const undoRow = await getUndo(board.undo);
   if (!undoRow) return { ok: false, error: "Undo record not found" };
 

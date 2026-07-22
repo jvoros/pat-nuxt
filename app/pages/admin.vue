@@ -15,12 +15,12 @@ watch(
     config,
     (newConfig) => {
         // Only clone once config actually has data loaded
-        if (newConfig && !content.value !== null) {
+        // Only initialize once when config first loads; don't overwrite unsaved edits
+        if (newConfig && content.value.json === "") {
             content.value.json = structuredClone(toRaw(newConfig));
         }
     },
-    // immediate runs on initial mount; deep watches nested updates
-    { immediate: true, deep: true },
+    { immediate: true },
 );
 
 const hasUnsavedChanges = computed(() => {

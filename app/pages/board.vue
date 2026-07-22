@@ -1,6 +1,5 @@
 <script setup lang="ts">
-const { logout } = useAuth();
-const { board, config } = useBoard();
+const { board } = useBoard();
 </script>
 
 <template>

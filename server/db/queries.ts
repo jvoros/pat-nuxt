@@ -113,7 +113,7 @@ export const updateBoard = async (
 export const updateConfig = async (
   slug: string,
   config: SiteConfig,
-): Promise<void> => {
+): Promise<boolean> => {
   const db = useDb();
   const result = await db.execute({
     sql: "UPDATE sites SET site = ? WHERE slug = ?",

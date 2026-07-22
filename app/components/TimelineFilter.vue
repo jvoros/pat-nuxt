@@ -7,13 +7,13 @@ const props = defineProps<{
 
 const emit = defineEmits(["set-filter"]);
 
-const providersMenu = [
+const providersMenu = computed(() => [
     [{ label: "Show Only:", type: "label" }],
     getShiftsAlphabetically().map((shiftId) => ({
         label: getShiftName(shiftId),
         onSelect: () => handleClick(shiftId),
     })),
-];
+]);
 
 const clearMenu = [
     [
@@ -28,7 +28,7 @@ const clearMenu = [
 ];
 
 const menuItems = computed(() => {
-    return props.filtered === "" ? providersMenu : clearMenu;
+    return props.filtered === "" ? providersMenu.value : clearMenu;
 });
 
 function handleClick(shiftId: Shift.id) {

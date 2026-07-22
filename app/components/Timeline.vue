@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import type { BoardEvent, Shift } from "../../server/core/types";
-
 const { board, send, getShiftName, getShiftsAlphabetically } = useBoard();
 
 const props = defineProps<{
-    timeline: BoardEvent.id[];
+    timeline: string[];
 }>();
 
 const loading = ref(false);
 
 const filteredShiftId = ref("");
-function setFilter(shiftId: shiftId) {
+function setFilter(shiftId: string) {
     filteredShiftId.value = shiftId;
 }
 

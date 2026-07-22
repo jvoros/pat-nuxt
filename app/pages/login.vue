@@ -5,7 +5,7 @@ if (loggedIn.value) {
     await navigateTo("/board");
 }
 
-const slug = ref("");
+const slug = ref("smh");
 const code = ref("");
 const error = ref("");
 const loading = ref(false);
@@ -24,26 +24,37 @@ async function submit() {
 </script>
 
 <template>
-    <div>
-        <h1>Sign In</h1>
-        <form @submit.prevent="submit">
-            <input
-                v-model="slug"
-                type="text"
-                placeholder="Site"
-                autocomplete="off"
-                required
+    <div
+        class="mx-auto mt-30 w-100 flex flex-col gap-4 py-8 px-8 border rounded border-muted bg-white"
+    >
+        <img src="/pat.svg" class="w-24" />
+        <div class="font-bold text-4xl w-60">Welcome to the Rotation.</div>
+        <form @submit.prevent="submit" class="flex flex-col gap-4">
+            <UFormField label="Access Code">
+                <UInput
+                    v-model="code"
+                    type="password"
+                    class="w-full"
+                    color="neutral"
+                    required
+                />
+            </UFormField>
+
+            <UAlert
+                color="error"
+                variant="outline"
+                v-if="error"
+                :description="error"
             />
-            <input
-                v-model="code"
-                type="password"
-                placeholder="Access code"
-                required
+            <UButton
+                type="submit"
+                :disabled="loading"
+                :loading="loading"
+                color="neutral"
+                size="xl"
+                label="Log On"
+                class="justify-center"
             />
-            <p v-if="error">{{ error }}</p>
-            <button type="submit" :disabled="loading">
-                {{ loading ? "Signing in…" : "Sign in" }}
-            </button>
         </form>
     </div>
 </template>

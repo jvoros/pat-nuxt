@@ -8,6 +8,9 @@ type BoardState = {
   config: Ref<SiteConfig | null>;
   connected: Ref<boolean>;
   send: (action: ActionMessage) => Promise<SendResult>;
+  updateConfig: (slug: string, config: SiteConfig) => Promise<void>;
+  getShiftName: (id: string) => string;
+  getShiftsAlphabetically: () => string[];
 };
 
 // Shared state — one connection per site session regardless of how many
@@ -42,11 +45,14 @@ export const useBoard = (): BoardState => {
     });
   };
 
-  const getBoardAndConfig = (slug: SiteConfig.slug): Promise<void> => {
-    $fetch(`/api/board/${slug}`).then((data) => {
+  const getBoardAndConfig = async (slug: string): Promise<void> => {
+    try {
+      const data = await $fetch(`/api/board/${slug}`);
       board.value = data.board;
       config.value = data.config;
-    });
+    } catch (err) {
+      console.error("Failed to fetch board:", err);
+    }
   };
 
   // Initialize Board and open WebSocket
@@ -96,7 +102,6 @@ export const useBoard = (): BoardState => {
     slug: string,
     config: SiteConfig,
   ): Promise<void> => {
-    console.log("UpdateConfig fired: ", { slug, config });
     try {
       await $fetch(`/api/config/${slug}`, {
         method: "POST",
@@ -106,27 +111,18 @@ export const useBoard = (): BoardState => {
     } catch (err) {
       console.error(err);
     }
-    return slug;
   };
 
   // BOARD UTILITIES
-  function getShiftName(id: Shift.id): string {
+  function getShiftName(id: string): string {
     const shift = board.value?.shifts[id];
-    return `${shift.first} ${shift.last}`;
+    return shift ? `${shift.first} ${shift.last}` : "(unknown)";
   }
 
-  function getShiftsAlphabetically() {
-    const shifts = Object.keys(board.value?.shifts).map(
-      (shiftId) => board.value.shifts[shiftId],
-    );
-
-    const sortedShifts = shifts.sort((a, b) => {
-      if (a.last < b.last) return -1;
-      if (a.last > b.last) return 1;
-      return 0;
-    });
-
-    return sortedShifts.map((shift) => shift.id);
+  function getShiftsAlphabetically(): string[] {
+    if (!board.value) return [];
+    const shifts = Object.values(board.value.shifts);
+    return shifts.sort((a, b) => a.last.localeCompare(b.last)).map((s) => s.id);
   }
 
   instance = {

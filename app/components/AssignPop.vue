@@ -90,7 +90,7 @@ async function assign() {
                         placeholder="Room"
                         size="lg"
                         v-model="selectedRoom"
-                        :items="config.rooms"
+                        :items="config?.rooms ?? []"
                     />
                     <UButton
                         color="neutral"

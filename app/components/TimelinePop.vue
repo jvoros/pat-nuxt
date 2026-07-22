@@ -6,15 +6,7 @@ const props = defineProps<{
 }>();
 const loading = ref(false);
 const open = ref(false);
-
-async function reassignTo(shiftId: Shift.id) {
-    loading.value = true;
-    await send({
-        action: "reassign",
-        payload: { eventId: props.eventId, newShiftId: shiftId },
-    });
-    loading.value = false;
-}
+const noteValue = ref(props.event.note ?? "");
 
 const reassignSelected = ref("");
 const reassignItems = computed(() =>
@@ -40,7 +32,7 @@ async function reassign() {
 }
 
 const changeRoomSelected = ref("");
-const changeRoomItems = config.value?.rooms;
+const changeRoomItems = computed(() => config.value?.rooms);
 
 async function changeRoom() {
     loading.value = "changeRoom";
@@ -62,7 +54,7 @@ async function updateNote() {
         action: "updateNote",
         payload: {
             eventId: props.event.id,
-            note: props.event.note,
+            note: noteValue.value,
         },
     });
     loading.value = "";
@@ -131,7 +123,7 @@ function clearSelected() {
                         />
                         <template #content>
                             <UTextarea
-                                v-model="event.note"
+                                v-model="noteValue"
                                 color="neutral"
                                 class="m-2"
                             />

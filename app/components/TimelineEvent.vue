@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import type { BoardEvent } from "../../server/core/types";
 import { convertTime } from "../utils/dates";
 
 const { board } = useBoard();
 const props = defineProps<{
-    eventId: BoardEvent.id;
+    eventId: string | undefined;
 }>();
 
 const event = computed(() => board.value?.events[props.eventId]);

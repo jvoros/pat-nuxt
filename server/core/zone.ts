@@ -123,23 +123,17 @@ const movePointer = (params: {
   }
 
   const { zone, shifts, which } = params;
-  let offset = params.offset;
-  const moreOffset = () => (offset < 0 ? offset - 1 : offset + 1);
+  const direction = params.offset < 0 ? -1 : 1;
+  let steps = 0;
 
-  while (true) {
-    const nextIndex = getNextIndex({ zone, which, offset });
+  while (Math.abs(steps) <= zone.shifts.length) {
+    steps += direction;
+    const nextIndex = getNextIndex({ zone, which, offset: steps });
     const nextShift = shifts[zone.shifts[nextIndex]!]!;
-    if (which === "super" && nextShift.role !== "physician") {
-      offset = moreOffset();
-      continue;
-    }
-    if (nextShift.status === "paused") {
-      offset = moreOffset();
-      continue;
-    }
+    if (which === "super" && nextShift.role !== "physician") continue;
+    if (nextShift.status === "paused") continue;
     if (nextShift.status === "skip") {
       ShiftModule.changeStatus({ shift: nextShift, status: "active" });
-      offset = moreOffset();
       continue;
     }
     zone[which] = nextIndex;

@@ -1,8 +1,7 @@
 import { updateConfig } from "../../db/queries";
 import type { SiteConfig } from "../core/types";
 
-// Returns the current board for a site, or null if no board exists yet.
-// The client uses this for the initial page load before the WebSocket connects.
+// Updates the site configuration in the database.
 export default defineEventHandler(async (event) => {
   const { slug, config } = await readBody<{ slug: string; config: SiteConfig }>(
     event,
