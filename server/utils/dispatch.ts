@@ -36,7 +36,15 @@ export const dispatch = async (
     return { ok: false, error: `Unknown action: ${action}` };
   }
 
-  const result = fn(board, payload);
+  const result = fn(
+    board,
+    action === "signIn"
+      ? {
+          ...(payload as Parameters<typeof Core.signIn>[1]),
+          siteConfig: site.config,
+        }
+      : payload,
+  );
   if (result.error) return { ok: false, error: String(result.error) };
 
   const undoId = await addUndo(result.oldboard);

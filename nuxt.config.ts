@@ -13,6 +13,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     tursoUrl: "", // overridden by NUXT_TURSO_URL
     tursoAuthToken: "", // overridden by NUXT_TURSO_AUTH_TOKEN
+    adminCode: "", //overridden by NUXT_ADMIN_CODE
   },
 
   nitro: {

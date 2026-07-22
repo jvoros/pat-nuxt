@@ -15,7 +15,7 @@ The application is built around a **board**. Each emergency department (site) ha
 - A running log of events (assignments, sign-ins, sign-outs, etc.)
 - The ability to undo the most recent action
 
-When the first shift of a new day signs in, the board resets and the previous day's data is cleared.
+When the first shift of a new day signs in, the board resets and the previous day's data is cleared. If the site config has been updated since the previous day, the new config is picked up automatically on reset.
 
 ---
 
@@ -41,7 +41,7 @@ When the first shift of a new day signs in, the board resets and the previous da
 │   ├── core/              # Business logic — pure functions, no framework dependencies
 │   │   ├── types.ts       # All shared TypeScript types
 │   │   ├── index.ts       # Public API: the Core object
-│   │   ├── board.ts       # Board-level operations (sign in/out, zones, triage, etc.)
+│   │   ├── board.ts       # Board-level operations (sign in/out, reset, zones, triage, etc.)
 │   │   ├── assign.ts      # Patient assignment logic
 │   │   ├── zone.ts        # Zone and rotation pointer logic
 │   │   ├── shift.ts       # Shift construction and count management
@@ -50,10 +50,12 @@ When the first shift of a new day signs in, the board resets and the previous da
 │   │
 │   ├── api/
 │   │   ├── auth/
-│   │   │   ├── login.post.ts   # Verifies access code, sets session
-│   │   │   └── logout.post.ts  # Clears session
-│   │   └── board/
-│   │       └── [slug].get.ts   # Returns current board and site config for initial page load
+│   │   │   ├── login.post.ts        # Verifies access code, sets session
+│   │   │   └── logout.post.ts       # Clears session
+│   │   ├── board/
+│   │   │   └── [slug].get.ts        # Returns current board and site config for initial page load
+│   │   └── config/
+│   │       └── [slug].post.ts       # Admin: updates site config in the database
 │   │
 │   ├── routes/
 │   │   └── ws/
@@ -70,12 +72,39 @@ When the first shift of a new day signs in, the board resets and the previous da
 │
 ├── app/
 │   ├── composables/
+│   │   ├── useAuth.ts     # Login, logout, session state
 │   │   └── useBoard.ts    # Board state, WebSocket connection, and action sender
 │   ├── middleware/
 │   │   └── auth.global.ts # Route guard — redirects based on session state
 │   ├── pages/
 │   │   ├── login.vue      # Login form
-│   │   └── board.vue      # Board page (stub)
+│   │   ├── board.vue      # Main board page
+│   │   ├── admin.vue      # Admin page (site config management)
+│   │   └── admin-lock.vue # Admin authentication gate
+│   ├── components/
+│   │   ├── AppHeader.vue          # Site header with nav
+│   │   ├── AppFooter.vue          # Site footer
+│   │   ├── HeaderButtons.vue      # Header action buttons
+│   │   ├── HeaderAddPop.vue       # Add clinician popover (provider + schedule selects)
+│   │   ├── HeaderLogo.vue         # Logo
+│   │   ├── SectionHeader.vue      # Zone section header with collapsible toggle
+│   │   ├── SectionRotation.vue    # Renders a zone's shift list with rotation flags
+│   │   ├── Shift.vue              # Individual shift card with flags-driven styles
+│   │   ├── ShiftMenu.vue          # Shift action dropdown (pause, zone, sign out, etc.)
+│   │   ├── ShiftMeta.vue          # Shift metadata display (name, counts)
+│   │   ├── ShiftTriageButton.vue  # Triage count button
+│   │   ├── AssignPop.vue          # Patient assignment popover
+│   │   ├── Timeline.vue           # Event timeline panel
+│   │   ├── TimelineEvent.vue      # Single timeline event row
+│   │   ├── TimelineEventAssign.vue# Assignment-specific event display
+│   │   ├── TimelineFilter.vue     # Timeline filter controls
+│   │   ├── TimelineIcon.vue       # Event type icon
+│   │   ├── TimelinePop.vue        # Timeline event detail popover
+│   │   └── LoadingIcon.vue        # Reusable loading spinner
+│   ├── utils/
+│   │   ├── shiftFlags.ts  # Derives shift state flags from shift + zone context
+│   │   ├── dates.ts       # Date formatting helpers
+│   │   └── modes.ts       # Patient arrival mode helpers
 │   └── app.vue
 │
 ├── tests/                 # Unit tests for server/core
@@ -88,6 +117,7 @@ When the first shift of a new day signs in, the board resets and the previous da
 │
 ├── nuxt.config.ts
 ├── vitest.config.ts
+├── .prettierrc.json
 └── .env                   # Local dev credentials (not committed)
 ```
 
@@ -113,7 +143,7 @@ Server routes interact with `Core` exclusively through `dispatch`. It exposes:
 | Method | Description |
 |---|---|
 | `Core.build` | Creates a fresh empty board from a site config |
-| `Core.signIn` | Adds a provider/schedule as a new shift; resets the board if the schedule's `reset` flag is set |
+| `Core.signIn` | Adds a provider/schedule as a new shift; resets the board if the schedule's `reset` flag is set, picking up any config changes |
 | `Core.signOut` | Moves a shift to the Off Rotation zone |
 | `Core.joinZone` | Adds a shift to an additional zone |
 | `Core.leaveZone` | Removes a shift from a zone |
@@ -126,6 +156,7 @@ Server routes interact with `Core` exclusively through `dispatch`. It exposes:
 | `Core.assignToZone` | Assigns a patient to whoever is next in a zone's rotation |
 | `Core.reassign` | Moves a patient from one shift to another, adjusting supervisor counts |
 | `Core.changeRoom` | Updates the room on an existing assignment event |
+| `Core.updateNote` | Updates the note on an existing event |
 
 ### Zones
 
@@ -137,6 +168,10 @@ Each board has several zones. A zone's `type` determines its behaviour:
 | `rotation` | Rotates patient assignments only |
 | `simple` | The shift at index 0 is always next; used for fast-track / pit zones |
 | `list` | No rotation; used for the Off Rotation zone |
+
+### Board reset and config updates
+
+`Core.reset()` is called automatically when the first shift of a new day signs in (when `schedule.reset === true`). If a `siteConfig` is provided, the board is rebuilt from the fresh config — picking up any zone, schedule, or provider changes made via the admin panel. Without a config, it rebuilds from the existing board's zone definitions.
 
 ### Board state
 
@@ -165,7 +200,7 @@ Sites are protected by a shared access code — one code per emergency departmen
 1. User submits site slug and access code to `POST /api/auth/login`
 2. Server fetches the stored hash and salt for that site via `getAccessCode(slug)`
 3. The submitted code is verified with `verifyCode(submitted, hash, salt)`
-4. On success, `setUserSession({ slug })` stores the site slug in an encrypted cookie
+4. On success, `setUserSession({ user: { slug } })` stores the site slug in an encrypted cookie
 5. Client refreshes its session and navigates to `/board`
 
 Session cookies are encrypted using `NUXT_SESSION_PASSWORD` via `nuxt-auth-utils`. The plaintext access code is never stored.
@@ -173,8 +208,29 @@ Session cookies are encrypted using `NUXT_SESSION_PASSWORD` via `nuxt-auth-utils
 ### Route protection
 
 `app/middleware/auth.global.ts` runs on every route change:
+- `/` redirects to `/board` if logged in, `/login` if not
 - Unauthenticated users are redirected to `/login`
 - Authenticated users visiting `/login` are redirected to `/board`
+
+### Admin authentication
+
+The admin panel (`/admin`) requires a second layer of authentication on top of the regular site session. A separate `NUXT_ADMIN_CODE` environment variable is the admin password — it is not stored in the database.
+
+**Admin login flow:**
+
+1. Any route using the `admin` middleware is intercepted by `app/middleware/admin.ts`
+2. If `session.admin` is not `true`, the user is redirected to `/admin-lock` with the intended path as a `redirect` query param
+3. The user submits the admin code on `/admin-lock`, which posts to `POST /api/auth/verify-admin`
+4. The server compares the submitted code to `NUXT_ADMIN_CODE` directly — no hashing needed since it never touches the database
+5. On success, the existing session is updated in place with `admin: true` and the user is redirected back to their intended page
+
+This keeps the admin gate lightweight — no separate admin accounts, no database changes, just a flag added to the existing session cookie.
+
+### Admin panel (`/admin`)
+
+`admin.vue` provides a full JSON editor (via `json-editor-vue`) for the site config. Changes are saved via `useBoard().updateConfig()` which posts to `POST /api/config/[slug]`. A warning badge appears when there are unsaved changes and the save button is disabled if the JSON is invalid.
+
+Config changes take effect on the next daily board reset — when the first shift signs in the following morning, `Core.reset()` rebuilds the board from the updated config.
 
 ### Access codes
 
@@ -238,28 +294,10 @@ Undo is also handled via the WebSocket — send `{ "action": "undo" }` with no p
 ### `dispatch` (`server/utils/dispatch.ts`)
 
 Sits between the WebSocket handler and `Core`. For every action it:
-1. Fetches the current board from the database
-2. Calls `Core[action](board, payload)`
+1. Fetches the current board and site config from the database
+2. Calls `Core[action](board, payload)` — for `signIn`, also passes `siteConfig` so resets pick up config changes
 3. Saves the pre-action board to `undos` and writes the updated board via `updateBoard`
 4. Calls `clearUndos` if the action triggered a daily reset (`result.reset === true`)
-
-### Client: `app/composables/useBoard.ts`
-
-`useBoard()` is the single point of contact between the UI and the server. It manages:
-
-- An initial `GET /api/board/[slug]` fetch to populate board and config state before the WebSocket connects
-- The WebSocket connection to `/ws/[slug]`
-- Reactive `board`, `config`, and `connected` state shared across all components via `useState`
-- A `send(action)` function for dispatching actions over the WebSocket
-
-```ts
-const { board, config, connected, send } = useBoard();
-
-// Example: assign next patient in a zone
-send({ action: "assignToZone", payload: { zoneSlug: "main", mode: "walkin", room: "4" } });
-```
-
-The composable is a singleton — only one WebSocket connection is opened per session regardless of how many components call `useBoard()`. Call `resetBoard()` on logout to tear it down.
 
 ---
 
@@ -296,9 +334,56 @@ send({ action: "assignToZone", payload: { zoneSlug: "main", mode: "walkin", room
 | `board` | Reactive `Board \| null` — updated on every server broadcast |
 | `config` | Reactive `SiteConfig \| null` — populated on initial fetch |
 | `connected` | Reactive boolean — WebSocket connection status |
-| `send(action)` | Sends a board action over the WebSocket |
+| `send(action)` | Sends a board action over the WebSocket, returns a `Promise` that resolves when the server responds |
 
 The composable is a singleton — only one WebSocket connection is opened per session regardless of how many components call `useBoard()`. Call `resetBoard()` on logout to tear it down.
+
+---
+
+## Client utilities (`app/utils`)
+
+### `shiftFlags.ts`
+
+Derives per-shift display flags from a shift and its zone context. Used by `SectionRotation.vue` to compute flags once per shift and pass them down to `Shift.vue` as a single prop.
+
+```ts
+const flags = getShiftFlags(shiftId, zone, shift);
+// { isNext, isSuper, isRotating, isPaused, isSkipped, isOff }
+```
+
+`isPaused` and `isSkipped` only evaluate to `true` for `rotation` and `dual` zone types.
+
+### `dates.ts`
+
+Date formatting helpers for displaying event timestamps in the timeline.
+
+### `modes.ts`
+
+Helpers for patient arrival mode labels and icons (`walkin`, `ambo`, `police`, `ft`, `heli`).
+
+---
+
+## Board components
+
+### `SectionRotation.vue`
+
+Renders a zone's shift list. Computes `isNext` and `isSuper` flags per shift using the zone's rotation pointers, then passes a full `ShiftFlags` object to each `Shift` via `getShiftFlags`.
+
+### `Shift.vue`
+
+Individual shift card. Accepts a `shiftId` and `flags` prop. All conditional styles are computed locally via `getShiftStyles(flags)` using `clsx` — no style logic leaks into the template. Includes a `ShiftMenu` dropdown for actions.
+
+### `ShiftMenu.vue`
+
+Dropdown menu for shift actions (pause/unpause, switch zone, join zone, leave zone, sign out, delete). Uses `useBoard().send()` and shows a loading spinner while the action is in flight.
+
+### `Timeline.vue`
+
+Displays the board's recent event log from `board.timeline`. Each event is rendered by `TimelineEvent.vue` with type-specific icons and assignment detail popovers.
+
+### `HeaderAddPop.vue`
+
+Popover for adding a clinician to the board. Contains provider and schedule selects populated from `config.providers` and `config.schedule`. Submits a `signIn` action via `useBoard().send()` with a loading state on the submit button.
 
 ---
 
@@ -346,6 +431,7 @@ assigned, supervised, bounty -- bounty = triaged count (legacy column name)
 | `clearUndos(slug)` | Deletes undo rows older than 48 hours for a site; called on daily reset |
 | `getAccessCode(slug)` | Returns the stored hash and salt for a site |
 | `setAccessCode(slug, hash, salt)` | Stores a new hashed access code for a site |
+| `updateConfig(slug, config)` | Updates the site config JSON in the database |
 
 ---
 
@@ -358,6 +444,7 @@ Nuxt maps `NUXT_*` env vars to `runtimeConfig` automatically.
 | `NUXT_TURSO_URL` | Turso database URL |
 | `NUXT_TURSO_AUTH_TOKEN` | Turso auth token |
 | `NUXT_SESSION_PASSWORD` | Cookie encryption key — must be at least 32 characters |
+| `NUXT_ADMIN_CODE` | Access code for administrative functions on board |
 
 Generate a session password:
 ```sh
@@ -384,4 +471,4 @@ npm test           # single run
 npm run test:watch # watch mode
 ```
 
-72 tests across 5 suites: `event`, `shift`, `zone`, `board`, `assign`.
+74 tests across 5 suites: `event`, `shift`, `zone`, `board`, `assign`.

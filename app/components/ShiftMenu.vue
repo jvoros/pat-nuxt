@@ -17,14 +17,14 @@ async function dispatch(params: ActionMessage) {
 }
 
 const otherZones = computed(() => {
-    return Object.keys(board?.value.zones).filter(
+    return Object.keys(board.value?.zones ?? {}).filter(
         (z) => z !== props.zoneSlug && z !== "off",
     );
 });
 
 const inManyZones = computed(() => {
-    const inZones = Object.keys(board?.value.zones).filter((slug) => {
-        return board?.value.zones[slug].shifts.includes(props.shift.id);
+    const inZones = Object.keys(board.value?.zones).filter((slug) => {
+        return board.value?.zones[slug].shifts.includes(props.shift.id);
     });
     return inZones.length > 1;
 });

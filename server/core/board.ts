@@ -49,32 +49,38 @@ const make = (params: { slug: string; siteConfig: SiteConfig }): Board => {
 
 // RESET
 
-const reset = (board: Board): Board => {
+const reset = (board: Board, siteConfig?: SiteConfig): Board => {
   const oldDate = board.date;
 
-  const newBoard: Board = {
-    slug: board.slug,
-    date: Date.now(),
-    zoneOrder: [...board.zoneOrder],
-    timeline: [],
-    zones: {},
-    shifts: {},
-    events: {},
-  };
+  // If a fresh config is provided (e.g. admin updated config before reset),
+  // use it to rebuild zones. Otherwise fall back to the existing board's zones.
+  const newBoard: Board = siteConfig
+    ? make({ slug: siteConfig.slug, siteConfig })
+    : {
+        slug: board.slug,
+        date: Date.now(),
+        zoneOrder: [...board.zoneOrder],
+        timeline: [],
+        zones: {},
+        shifts: {},
+        events: {},
+      };
 
-  // Rebuild each zone in its empty initial state from the existing zone definitions
-  board.zoneOrder.forEach((slug) => {
-    const zone = board.zones[slug]!;
-    const params: ZoneMakeParams = {
-      slug: zone.slug,
-      name: zone.name,
-      type: zone.type,
-      superZone: zone.superZone,
-      triggerSkip: zone.triggerSkip,
-      pitZone: zone.pitZone,
-    };
-    newBoard.zones[slug] = ZoneModule.make(params);
-  });
+  if (!siteConfig) {
+    // Rebuild each zone in its empty initial state from the existing zone definitions
+    board.zoneOrder.forEach((slug) => {
+      const zone = board.zones[slug]!;
+      const params: ZoneMakeParams = {
+        slug: zone.slug,
+        name: zone.name,
+        type: zone.type,
+        superZone: zone.superZone,
+        triggerSkip: zone.triggerSkip,
+        pitZone: zone.pitZone,
+      };
+      newBoard.zones[slug] = ZoneModule.make(params);
+    });
+  }
 
   // event
   const eventParams = {

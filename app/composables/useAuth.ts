@@ -1,5 +1,10 @@
 export const useAuth = () => {
-  const { loggedIn, session, fetch: refreshSession, clear: clearSession } = useUserSession();
+  const {
+    loggedIn,
+    session,
+    fetch: refreshSession,
+    clear: clearSession,
+  } = useUserSession();
 
   const login = async (slug: string, code: string): Promise<void> => {
     await $fetch("/api/auth/login", {
@@ -17,5 +22,14 @@ export const useAuth = () => {
     await navigateTo("/login");
   };
 
-  return { loggedIn, session, login, logout };
+  const adminLogin = async (code: string): Promise<void> => {
+    await $fetch("/api/auth/verify-admin", {
+      method: "POST",
+      body: { code },
+    });
+    await refreshSession();
+    await navigateTo("/admin");
+  };
+
+  return { loggedIn, session, login, logout, adminLogin };
 };

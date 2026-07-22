@@ -40,10 +40,11 @@ const signInCheckReset = (
   params: {
     provider: Provider;
     schedule: ScheduleItem;
+    siteConfig?: SiteConfig;
   },
 ): CoreResponse => {
   if (params.schedule.reset) {
-    const resetBoard = BoardModule.reset(board);
+    const resetBoard = BoardModule.reset(board, params.siteConfig);
 
     // signIn withUndo() returns the signed-in board, but its 'oldboard' is just
     // the empty reset board — an intermediate state we don't want to expose.
@@ -65,6 +66,7 @@ export type Core = {
     params: {
       provider: Provider;
       schedule: ScheduleItem;
+      siteConfig?: SiteConfig;
     },
   ) => CoreResponse;
   signOut: (board: Board, params: { shiftId: Shift["id"] }) => CoreResponse;

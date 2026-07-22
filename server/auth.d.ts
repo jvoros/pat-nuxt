@@ -1,6 +1,9 @@
 declare module "#auth-utils" {
   interface User {
-    slug: string;
+    user: {
+      slug: string;
+      admin?: boolean;
+    };
   }
 }
 

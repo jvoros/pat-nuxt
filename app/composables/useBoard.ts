@@ -42,6 +42,14 @@ export const useBoard = (): BoardState => {
     });
   };
 
+  const getBoardAndConfig = (slug: SiteConfig.slug): Promise<void> => {
+    $fetch(`/api/board/${slug}`).then((data) => {
+      board.value = data.board;
+      config.value = data.config;
+    });
+  };
+
+  // Initialize Board and open WebSocket
   // If Nuxt client-side
   if (import.meta.client) {
     const { session } = useUserSession();
@@ -49,10 +57,7 @@ export const useBoard = (): BoardState => {
 
     if (slug) {
       // Fetch the initial board state before the WebSocket connects
-      $fetch(`/api/board/${slug}`).then((data) => {
-        board.value = data.board;
-        config.value = data.config;
-      });
+      getBoardAndConfig(slug);
 
       const protocol = location.protocol === "https:" ? "wss" : "ws";
       ws = new WebSocket(`${protocol}://${location.host}/ws/${slug}`);
@@ -87,6 +92,24 @@ export const useBoard = (): BoardState => {
     }
   }
 
+  const updateConfig = async (
+    slug: string,
+    config: SiteConfig,
+  ): Promise<void> => {
+    console.log("UpdateConfig fired: ", { slug, config });
+    try {
+      await $fetch(`/api/config/${slug}`, {
+        method: "POST",
+        body: { slug, config },
+      });
+      getBoardAndConfig(slug);
+    } catch (err) {
+      console.error(err);
+    }
+    return slug;
+  };
+
+  // BOARD UTILITIES
   function getShiftName(id: Shift.id): string {
     const shift = board.value?.shifts[id];
     return `${shift.first} ${shift.last}`;
@@ -111,6 +134,7 @@ export const useBoard = (): BoardState => {
     config,
     connected,
     send,
+    updateConfig,
     getShiftName,
     getShiftsAlphabetically,
   };
